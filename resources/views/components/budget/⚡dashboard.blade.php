@@ -132,7 +132,7 @@ new class extends Component
         </button>
     </div>
 
-    {{-- Banner Ready to Assign --}}
+    {{-- Banner dinero por asignar --}}
     @php $rta = $this->readyToAssign; @endphp
     <div class="rounded-2xl p-5 text-white shadow-sm {{ $rta < 0 ? 'bg-red-600' : ($rta > 0 ? 'bg-emerald-600' : 'bg-slate-600') }}">
         <p class="text-sm opacity-90">Listo para asignar</p>

@@ -1,6 +1,6 @@
 # 💸 Poorman's Budget
 
-Aplicación de presupuesto familiar al estilo **YNAB (You Need A Budget)** para
+Aplicación de presupuesto familiar con **método de sobres / base-cero** para
 controlar los gastos del grupo familiar. Presupuesto base-cero ("dale un trabajo
 a cada peso"), multi-moneda **ARS + USD**, login con Google restringido por
 whitelist, y pensada **mobile-first** (PWA).
@@ -13,16 +13,16 @@ whitelist, y pensada **mobile-first** (PWA).
 - **SQLite** en desarrollo · **PostgreSQL** en producción (Laravel Cloud)
 - **Laravel Socialite** (Google OAuth)
 - **Pest** para tests
-- **Chart.js** para reportes
+- Reportes con barras CSS (sin dependencias JS)
 
-## Metodología YNAB que replicamos
+## Metodología de presupuesto base-cero
 
-1. **Dale un trabajo a cada peso** — presupuesto base-cero (Ready to Assign + asignación mensual).
+1. **Dale un trabajo a cada peso** — presupuesto base-cero (dinero por asignar + asignación mensual).
 2. **Aceptá tus gastos reales** — metas/targets por categoría (post-MVP).
 3. **Rodá con los golpes** — arrastre de saldos disponibles mes a mes.
-4. **Envejecé tu dinero** — métrica Age of Money.
+4. **Antigüedad del dinero** — métrica de cuántos días viven tus pesos antes de gastarse.
 
-Más el manejo de **tarjetas de crédito al estilo YNAB** (mover fondos a la
+Más el manejo de **tarjetas de crédito con reserva de fondos** (mover dinero a la
 categoría de pago al gastar) y atribución de **autor** por transacción dentro
 del presupuesto familiar compartido.
 
@@ -65,7 +65,7 @@ php artisan serve
 - [x] Fase 1 — Auth Google + whitelist
 - [x] Fase 2 — Cuentas y transacciones
 - [x] Fase 3 — Motor de presupuesto base-cero
-- [x] Fase 4 — Tarjetas de crédito estilo YNAB
+- [x] Fase 4 — Tarjetas de crédito (reserva de fondos)
 - [x] Fase 5 — Reportes + PWA
 - [x] Fase 6 — Deploy Laravel Cloud (ver [DEPLOY.md](DEPLOY.md))
 

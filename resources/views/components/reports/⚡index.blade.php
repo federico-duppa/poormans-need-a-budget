@@ -78,9 +78,9 @@ new class extends Component
         </button>
     </div>
 
-    {{-- Age of Money --}}
+    {{-- Antigüedad del dinero --}}
     <div class="rounded-2xl bg-slate-800 p-5 text-white">
-        <p class="text-sm text-slate-300">Edad del dinero (Age of Money)</p>
+        <p class="text-sm text-slate-300">Antigüedad del dinero</p>
         @if ($this->ageOfMoney !== null)
             <p class="mt-1 text-3xl font-bold">{{ $this->ageOfMoney }} <span class="text-lg font-normal text-slate-300">días</span></p>
             <p class="mt-2 text-xs text-slate-400">

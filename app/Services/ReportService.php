@@ -78,7 +78,7 @@ class ReportService
     }
 
     /**
-     * Age of Money (Rule 4): edad promedio del dinero gastado, en días.
+     * Antigüedad del dinero: edad promedio del dinero gastado, en días.
      *
      * Usa FIFO: empareja cada egreso con los ingresos más antiguos disponibles
      * y promedia (ponderado por monto) la antigüedad de los últimos 10 egresos.

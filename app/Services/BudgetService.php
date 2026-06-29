@@ -12,16 +12,16 @@ use Carbon\CarbonImmutable;
 use Illuminate\Support\Carbon;
 
 /**
- * Motor de presupuesto base-cero al estilo YNAB.
+ * Motor de presupuesto base-cero (método de sobres).
  *
  * Invariante fundamental:
- *   saldo total de cuentas on-budget = Ready to Assign + Σ disponible de categorías
+ *   saldo total de cuentas on-budget = dinero por asignar + Σ disponible de categorías
  *
  * Todos los montos se manejan en centavos de la moneda base del presupuesto
  * (campo amount_base de las transacciones).
  *
- * Arrastre (Rule 3 "Roll with the punches"): el "disponible" de una categoría
- * es acumulativo: Σ (asignado + actividad) de todos los meses hasta el mes dado.
+ * Arrastre (flexibilidad mes a mes): el "disponible" de una categoría es
+ * acumulativo: Σ (asignado + actividad) de todos los meses hasta el mes dado.
  */
 class BudgetService
 {
@@ -155,7 +155,7 @@ class BudgetService
     }
 
     /**
-     * Dinero listo para asignar (Ready to Assign), global del presupuesto.
+     * Dinero listo para asignar, global del presupuesto.
      *
      * Las tarjetas de crédito se excluyen del lado "efectivo": gastar a crédito
      * no reduce el RTA (reduce el disponible de la categoría del gasto), y el

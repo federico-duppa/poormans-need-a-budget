@@ -8,7 +8,7 @@ class AccountObserver
 {
     /**
      * Al crear una tarjeta de crédito, garantiza su categoría de pago
-     * (estilo YNAB: grupo-sistema "Pagos de tarjeta").
+     * dentro del grupo-sistema "Pagos de tarjeta".
      */
     public function created(Account $account): void
     {

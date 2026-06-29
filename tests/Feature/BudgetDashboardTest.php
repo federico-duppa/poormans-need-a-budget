@@ -25,7 +25,7 @@ it('asigna dinero a una categoría desde el tablero', function () {
     expect(app(BudgetService::class)->assigned($budget, $category, $month))->toBe(30000);
 });
 
-it('refleja el dinero disponible (ingreso) en Ready to Assign', function () {
+it('refleja el dinero disponible (ingreso) en el dinero por asignar', function () {
     $user = loginFamilyUser();
     $budget = $user->currentBudget();
     $account = $budget->accounts()->create([

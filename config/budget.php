@@ -23,7 +23,7 @@ return [
     | Monedas
     |--------------------------------------------------------------------------
     |
-    | Moneda base del presupuesto (en la que se consolidan Ready to Assign y
+    | Moneda base del presupuesto (en la que se consolidan el dinero por asignar y
     | reportes) y moneda secundaria soportada para cuentas/transacciones.
     |
     */

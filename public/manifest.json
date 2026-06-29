@@ -1,7 +1,7 @@
 {
     "name": "Poorman's Budget",
     "short_name": "Budget",
-    "description": "Presupuesto familiar al estilo YNAB",
+    "description": "Presupuesto familiar base-cero (método de sobres)",
     "start_url": "/",
     "scope": "/",
     "display": "standalone",

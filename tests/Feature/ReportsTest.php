@@ -45,7 +45,7 @@ it('calcula ingreso vs egreso del mes', function () {
         ->and($report[0]['expense'])->toBe(120000);
 });
 
-it('calcula el Age of Money con FIFO', function () {
+it('calcula la antigüedad del dinero con FIFO', function () {
     ['budget' => $b, 'account' => $acc, 'svc' => $svc] = reportSetup();
 
     Transaction::create(['account_id' => $acc->id, 'date' => '2026-06-01', 'amount' => 100000, 'currency' => 'ARS']);
@@ -55,7 +55,7 @@ it('calcula el Age of Money con FIFO', function () {
     expect($svc->ageOfMoney($b, '2026-06-30'))->toBe(15);
 });
 
-it('devuelve null en Age of Money sin egresos', function () {
+it('devuelve null en la antigüedad del dinero sin egresos', function () {
     ['budget' => $b, 'svc' => $svc] = reportSetup();
 
     expect($svc->ageOfMoney($b))->toBeNull();
@@ -66,7 +66,7 @@ it('renderiza la página de reportes', function () {
 
     $this->get(route('reports'))
         ->assertOk()
-        ->assertSee('Age of Money')
+        ->assertSee('Antigüedad del dinero')
         ->assertSee('Gasto por categoría')
         ->assertSee('Ingreso vs egreso');
 });

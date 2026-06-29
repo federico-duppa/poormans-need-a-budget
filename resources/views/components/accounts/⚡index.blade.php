@@ -54,7 +54,7 @@ new class extends Component
             'name' => $this->name,
             'type' => $this->type,
             'currency' => $this->currency,
-            // Las tarjetas de crédito también son cuentas on-budget en YNAB.
+            // Las tarjetas de crédito también son cuentas on-budget.
             'on_budget' => true,
             'position' => $budget->accounts()->count(),
         ]);

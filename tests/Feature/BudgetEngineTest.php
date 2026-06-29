@@ -57,7 +57,7 @@ it('calcula la actividad del mes (gastos en negativo)', function () {
     expect($svc->activity($b, $cat, '2026-06'))->toBe(-25000);
 });
 
-it('arrastra el disponible de un mes al siguiente (Rule 3)', function () {
+it('arrastra el disponible de un mes al siguiente', function () {
     ['budget' => $b, 'account' => $acc, 'category' => $cat, 'service' => $svc] = budgetSetup();
 
     // Junio: asigno 30000, gasto 10000 => disponible junio = 20000
@@ -71,7 +71,7 @@ it('arrastra el disponible de un mes al siguiente (Rule 3)', function () {
     expect($svc->available($b, $cat, '2026-07'))->toBe(17000);
 });
 
-it('calcula Ready to Assign como ingresos menos asignado', function () {
+it('calcula el dinero por asignar como ingresos menos asignado', function () {
     ['budget' => $b, 'account' => $acc, 'category' => $cat, 'service' => $svc] = budgetSetup();
 
     tx($acc, 100000, '2026-06-01');          // ingreso sin categoría

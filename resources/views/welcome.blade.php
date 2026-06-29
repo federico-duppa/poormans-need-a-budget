@@ -17,7 +17,7 @@
         <div class="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/15 text-3xl">💸</div>
         <h1 class="text-3xl font-bold tracking-tight">{{ config('app.name') }}</h1>
         <p class="mt-3 text-emerald-100">
-            Presupuesto familiar al estilo YNAB: dale un trabajo a cada peso y controlá
+            Presupuesto familiar base-cero: dale un trabajo a cada peso y controlá
             los gastos del grupo, en pesos y dólares.
         </p>
 
