@@ -59,16 +59,53 @@ class FamilyBudgetProvisioner
     }
 
     /**
-     * El presupuesto familiar (MVP: único). Lo crea si todavía no existe.
+     * El presupuesto familiar (MVP: único). Lo crea (con categorías por
+     * defecto) si todavía no existe.
      */
     public function familyBudget(): Budget
     {
-        return Budget::query()->firstOrCreate(
+        $budget = Budget::query()->firstOrCreate(
             [],
             [
                 'name' => 'Presupuesto familiar',
                 'base_currency' => config('budget.base_currency', 'ARS'),
             ]
         );
+
+        if ($budget->wasRecentlyCreated) {
+            $this->seedDefaultCategories($budget);
+        }
+
+        return $budget;
+    }
+
+    /**
+     * Categorías iniciales típicas de un presupuesto familiar.
+     */
+    protected function seedDefaultCategories(Budget $budget): void
+    {
+        $groups = [
+            'Gastos fijos' => ['Alquiler / Expensas', 'Servicios (luz/gas/agua)', 'Internet / Cable', 'Telefonía'],
+            'Día a día' => ['Supermercado', 'Transporte', 'Comida afuera', 'Salud'],
+            'Ahorros y metas' => ['Fondo de emergencia', 'Vacaciones'],
+            'Suscripciones' => ['Streaming'],
+        ];
+
+        $groupPosition = 0;
+
+        foreach ($groups as $groupName => $categories) {
+            $group = $budget->categoryGroups()->create([
+                'name' => $groupName,
+                'position' => $groupPosition++,
+            ]);
+
+            $categoryPosition = 0;
+            foreach ($categories as $categoryName) {
+                $group->categories()->create([
+                    'name' => $categoryName,
+                    'position' => $categoryPosition++,
+                ]);
+            }
+        }
     }
 }

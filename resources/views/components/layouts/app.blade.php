@@ -36,6 +36,20 @@
             {{ $slot }}
         </main>
 
+        {{-- Botón flotante de carga rápida --}}
+        @auth
+            @if (! request()->routeIs('transactions.new'))
+                <a href="{{ route('transactions.new') }}"
+                   class="fixed bottom-20 left-1/2 z-30 flex h-14 w-14 -translate-x-1/2 items-center justify-center rounded-full bg-emerald-600 text-white shadow-lg shadow-emerald-600/30 transition hover:bg-emerald-700"
+                   style="margin-bottom: env(safe-area-inset-bottom);"
+                   aria-label="Nuevo movimiento">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-7 w-7">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                </a>
+            @endif
+        @endauth
+
         {{-- Bottom navigation (mobile-first) --}}
         @auth
             @php

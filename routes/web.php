@@ -27,7 +27,8 @@ Route::post('/logout', [GoogleController::class, 'logout'])
 // --- App (autenticada + whitelist) ----------------------------------------
 Route::middleware(['auth', 'whitelisted'])->group(function () {
     Route::view('/budget', 'app.budget')->name('budget');
-    Route::view('/accounts', 'app.placeholder')->name('accounts');
-    Route::view('/transactions', 'app.placeholder')->name('transactions');
+    Route::view('/accounts', 'app.accounts')->name('accounts');
+    Route::view('/transactions', 'app.transactions')->name('transactions');
+    Route::view('/transactions/new', 'app.transaction-new')->name('transactions.new');
     Route::view('/reports', 'app.placeholder')->name('reports');
 });
