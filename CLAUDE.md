@@ -104,7 +104,8 @@ Acceso al presupuesto del usuario actual: `auth()->user()->currentBudget()`.
 
 ## Git
 
-Desarrollar en la branch `claude/laravel-family-budget-app-cnk8so`. No crear PRs sin
-pedido explícito. Evitar mencionar marcas registradas (p. ej. "YNAB") en código, docs,
+Desarrollar en la branch `claude/laravel-family-budget-app-cnk8so`. **Siempre que se
+trabaje en una branch y se termine el trabajo, abrir un PR hacia `main`** (con los tests
+en verde). Evitar mencionar marcas registradas (p. ej. "YNAB") en código, docs,
 comentarios o mensajes de commit — usar términos genéricos (base-cero, dinero por asignar,
 antigüedad del dinero).
