@@ -93,3 +93,26 @@ it('settles the payment category when paying the card', function () {
     // Invariant still holds
     expect($cash->balance())->toBe($svc->readyToAssign($b) + totalAvailable($b, $svc, '2026-06'));
 });
+
+it('monthlySummary matches the per-category methods', function () {
+    ['budget' => $b, 'cash' => $cash, 'card' => $card, 'groceries' => $g, 'payment' => $p, 'svc' => $svc] = ccSetup();
+
+    Transaction::create(['account_id' => $cash->id, 'date' => '2026-06-01', 'amount' => 100000, 'currency' => 'ARS']);
+    $svc->assign($b, $g, '2026-06', 50000);
+    Transaction::create(['account_id' => $card->id, 'date' => '2026-06-10', 'amount' => -30000, 'currency' => 'ARS', 'category_id' => $g->id]);
+
+    $summary = $svc->monthlySummary($b, '2026-06');
+    $find = fn (int $id) => collect($summary['groups'])
+        ->pluck('categories')->flatten(1)->firstWhere('id', $id);
+
+    expect($summary['readyToAssign'])->toBe($svc->readyToAssign($b));
+
+    $gs = $find($g->id);
+    expect($gs['assigned'])->toBe($svc->assigned($b, $g, '2026-06'))
+        ->and($gs['activity'])->toBe($svc->activity($b, $g, '2026-06'))
+        ->and($gs['available'])->toBe($svc->available($b, $g, '2026-06'));
+
+    $ps = $find($p->id);
+    expect($ps['activity'])->toBe($svc->activity($b, $p, '2026-06'))
+        ->and($ps['available'])->toBe($svc->available($b, $p, '2026-06'));
+});

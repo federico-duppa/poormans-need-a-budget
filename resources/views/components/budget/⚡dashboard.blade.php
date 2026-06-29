@@ -4,7 +4,6 @@ use App\Models\Budget;
 use App\Services\BudgetService;
 use App\Support\Money;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Collection;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
 
@@ -27,18 +26,24 @@ new class extends Component
         return auth()->user()->currentBudget();
     }
 
-    private function service(): BudgetService
+    /**
+     * Whole-month figures (RTA + per-category assigned/activity/available),
+     * computed in a few aggregate queries. Memoized for the request.
+     *
+     * @return array{readyToAssign: int, groups: array<int, array<string, mixed>>}
+     */
+    #[Computed]
+    public function summary(): array
     {
-        return app(BudgetService::class);
+        return app(BudgetService::class)->monthlySummary($this->budget(), $this->month);
     }
 
     private function loadAssignedInputs(): void
     {
         $inputs = [];
-        foreach ($this->budget()->categoryGroups()->with('categories')->get() as $group) {
-            foreach ($group->categories as $category) {
-                $cents = $this->service()->assigned($this->budget(), $category, $this->month);
-                $inputs[$category->id] = $cents === 0 ? '' : number_format($cents / 100, 2, '.', '');
+        foreach ($this->summary['groups'] as $group) {
+            foreach ($group['categories'] as $cat) {
+                $inputs[$cat['id']] = $cat['assigned'] === 0 ? '' : number_format($cat['assigned'] / 100, 2, '.', '');
             }
         }
         $this->assignedInputs = $inputs;
@@ -47,8 +52,8 @@ new class extends Component
     public function changeMonth(int $delta): void
     {
         $this->month = CarbonImmutable::parse($this->month)->addMonths($delta)->startOfMonth()->toDateString();
+        unset($this->summary);
         $this->loadAssignedInputs();
-        unset($this->groups, $this->readyToAssign);
     }
 
     public function updated(string $name, $value): void
@@ -68,41 +73,9 @@ new class extends Component
         }
 
         $cents = $value === '' ? 0 : Money::toCents($value);
-        $this->service()->assign($this->budget(), $category, $this->month, $cents);
+        app(BudgetService::class)->assign($this->budget(), $category, $this->month, $cents);
 
-        unset($this->groups, $this->readyToAssign);
-    }
-
-    #[Computed]
-    public function readyToAssign(): int
-    {
-        return app(BudgetService::class)->readyToAssign($this->budget());
-    }
-
-    /**
-     * Groups with their categories and the computed amounts for the month.
-     */
-    #[Computed]
-    public function groups(): Collection
-    {
-        $service = app(BudgetService::class);
-        $budget = $this->budget();
-
-        return $budget->categoryGroups()->with('categories')->orderBy('position')->get()
-            ->map(function ($group) use ($service, $budget) {
-                $categories = $group->categories->map(fn ($category) => [
-                    'id' => $category->id,
-                    'name' => $category->name,
-                    'activity' => $service->activity($budget, $category, $this->month),
-                    'available' => $service->available($budget, $category, $this->month),
-                ]);
-
-                return [
-                    'id' => $group->id,
-                    'name' => $group->name,
-                    'categories' => $categories,
-                ];
-            });
+        unset($this->summary);
     }
 
     public function monthLabel(): string
@@ -141,7 +114,7 @@ new class extends Component
     </div>
 
     {{-- Money to assign banner --}}
-    @php $rta = $this->readyToAssign; @endphp
+    @php $summary = $this->summary; $rta = $summary['readyToAssign']; @endphp
     <div class="rounded-2xl p-5 text-white shadow-sm {{ $rta < 0 ? 'bg-red-600' : ($rta > 0 ? 'bg-emerald-600' : 'bg-slate-600') }}">
         <p class="text-sm opacity-90">Listo para asignar</p>
         <p class="mt-1 text-3xl font-bold tracking-tight">{{ $this->fmt($rta) }}</p>
@@ -155,7 +128,7 @@ new class extends Component
 
     {{-- Categories by group --}}
     <div class="space-y-4">
-        @foreach ($this->groups as $group)
+        @foreach ($summary['groups'] as $group)
             <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white">
                 <div class="flex items-center justify-between bg-slate-50 px-4 py-2">
                     <h3 class="text-xs font-bold uppercase tracking-wide text-slate-500">{{ $group['name'] }}</h3>
