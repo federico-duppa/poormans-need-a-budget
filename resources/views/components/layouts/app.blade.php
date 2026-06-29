@@ -40,7 +40,7 @@
             {{ $slot }}
         </main>
 
-        {{-- Botón flotante de carga rápida --}}
+        {{-- Floating quick-add button --}}
         @auth
             @if (! request()->routeIs('transactions.new'))
                 <a href="{{ route('transactions.new') }}"

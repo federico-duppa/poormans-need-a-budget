@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('monthly_budgets', function (Blueprint $table) {
             $table->id();
             $table->foreignId('budget_id')->constrained()->cascadeOnDelete();
-            $table->date('month'); // primer día del mes (YYYY-MM-01)
+            $table->date('month'); // first day of the month (YYYY-MM-01)
             $table->timestamps();
 
             $table->unique(['budget_id', 'month']);

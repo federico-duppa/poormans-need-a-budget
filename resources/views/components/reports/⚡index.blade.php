@@ -67,7 +67,7 @@ new class extends Component
 }; ?>
 
 <div class="space-y-6">
-    {{-- Navegación de mes --}}
+    {{-- Month navigation --}}
     <div class="flex items-center justify-between">
         <button wire:click="changeMonth(-1)" class="rounded-full bg-slate-100 p-2 text-slate-600 hover:bg-slate-200" aria-label="Mes anterior">
             <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5"/></svg>
@@ -78,7 +78,7 @@ new class extends Component
         </button>
     </div>
 
-    {{-- Antigüedad del dinero --}}
+    {{-- Age of money --}}
     <div class="rounded-2xl bg-slate-800 p-5 text-white">
         <p class="text-sm text-slate-300">Antigüedad del dinero</p>
         @if ($this->ageOfMoney !== null)
@@ -91,7 +91,7 @@ new class extends Component
         @endif
     </div>
 
-    {{-- Gasto por categoría --}}
+    {{-- Spending by category --}}
     <div>
         <h2 class="mb-3 text-base font-semibold text-slate-700">Gasto por categoría</h2>
         @php $maxSpending = $this->spending->max('total') ?: 1; @endphp
@@ -112,7 +112,7 @@ new class extends Component
         </div>
     </div>
 
-    {{-- Ingreso vs egreso --}}
+    {{-- Income vs expense --}}
     <div>
         <h2 class="mb-3 text-base font-semibold text-slate-700">Ingreso vs egreso (6 meses)</h2>
         @php $maxFlow = max($this->incomeVsExpense->max('income'), $this->incomeVsExpense->max('expense')) ?: 1; @endphp

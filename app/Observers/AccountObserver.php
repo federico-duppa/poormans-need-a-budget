@@ -7,8 +7,8 @@ use App\Models\Account;
 class AccountObserver
 {
     /**
-     * Al crear una tarjeta de crédito, garantiza su categoría de pago
-     * dentro del grupo-sistema "Pagos de tarjeta".
+     * When a credit card is created, ensure its payment category exists
+     * within the system group "Pagos de tarjeta".
      */
     public function created(Account $account): void
     {

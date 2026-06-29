@@ -2,110 +2,111 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Qué es
+## What it is
 
-App de presupuesto familiar **base-cero** (método de sobres): asignás cada peso a una
-categoría, registrás movimientos y seguís el "disponible" mes a mes. Multi-moneda
-(ARS base + USD), login con Google restringido por whitelist, presupuesto familiar
-único y compartido. Producción en Laravel Cloud (PostgreSQL); desarrollo en SQLite.
+A **zero-based** family budget app (envelope method): you assign every peso to a
+category, record transactions, and track the "available" month to month. Multi-currency
+(ARS base + USD), Google login restricted by whitelist, single shared family budget.
+Production on Laravel Cloud (PostgreSQL); development on SQLite.
 
-> **El foco de la experiencia es mobile-first.** Toda UI nueva se diseña primero para
-> el celular: layout angosto (`max-w-2xl`), navegación inferior (bottom-nav), botón
-> flotante de carga rápida, targets táctiles grandes. La app es una PWA instalable.
-> Verificá cómo se ve en viewport chico antes de dar algo por terminado.
+> **The experience focus is mobile-first.** Every new UI is designed first for
+> the phone: narrow layout (`max-w-2xl`), bottom navigation (bottom-nav), floating
+> quick-add button, large touch targets. The app is an installable PWA.
+> Check how it looks in a small viewport before considering anything done.
 
-## Comandos
+## Commands
 
 ```bash
-composer setup                 # instala deps, .env, key, migra, build (primer arranque)
-composer dev                   # server + queue + logs (pail) + vite, todo junto
+composer setup                 # installs deps, .env, key, migrate, build (first run)
+composer dev                   # server + queue + logs (pail) + vite, all together
 composer test                  # config:clear + php artisan test
-./vendor/bin/pest              # correr toda la suite
-./vendor/bin/pest --filter="texto del it()"   # un solo test / grupo
-php artisan migrate            # migraciones (dev, SQLite)
-npm run build                  # compilar assets (Tailwind v4 / Vite)
+./vendor/bin/pest              # run the whole suite
+./vendor/bin/pest --filter="text of the it()"   # a single test / group
+php artisan migrate            # migrations (dev, SQLite)
+npm run build                  # compile assets (Tailwind v4 / Vite)
 ```
 
-Tests usan SQLite `:memory:` con `RefreshDatabase` (ver `phpunit.xml`, `tests/Pest.php`).
-Hay un helper global `loginFamilyUser(email?)` en `tests/Pest.php` que aprovisiona y
-autentica un usuario del presupuesto familiar — usalo como base de casi todos los tests.
+Tests use SQLite `:memory:` with `RefreshDatabase` (see `phpunit.xml`, `tests/Pest.php`).
+There is a global helper `loginFamilyUser(email?)` in `tests/Pest.php` that provisions and
+authenticates a family budget user — use it as the base for almost all tests.
 
 ## Stack
 
 Laravel 13 (PHP 8.4) · **Livewire 4** + Alpine + Blade · Tailwind v4 (Vite) ·
-Socialite (Google) · Pest. Reportes con barras CSS (sin JS de charts).
+Socialite (Google) · Pest. Reports with CSS bars (no chart JS).
 
-## Convención crítica: componentes Livewire 4 (single-file)
+## Critical convention: Livewire 4 components (single-file)
 
-Livewire 4 usa **single-file components**: clase + vista en UN archivo con prefijo `⚡`
-bajo `resources/views/components/<grupo>/⚡<nombre>.blade.php`. Generalos con
-`php artisan make:livewire Grupo/Nombre`. Se referencian por nombre punteado
+Livewire 4 uses **single-file components**: class + view in ONE file with the `⚡` prefix
+under `resources/views/components/<group>/⚡<name>.blade.php`. Generate them with
+`php artisan make:livewire Group/Name`. They are referenced by their dotted name
 (`accounts.index`, `budget.dashboard`).
 
-- Las páginas full-page se montan **embebidas** en una vista wrapper que aplica el
-  layout: `resources/views/app/*.blade.php` contiene `<x-layouts.app heading="..."><livewire:budget.dashboard/></x-layouts.app>`, y `routes/web.php` rutea con `Route::view(...)`.
-- El layout es un componente anónimo en `resources/views/components/layouts/app.blade.php`
-  (`<x-layouts.app>`), que incluye la bottom-nav y el FAB de carga rápida.
-- En tests, `Livewire::test('budget.dashboard')` resuelve por el mismo nombre punteado.
-- **No inyectes dependencias en hooks de lifecycle** (`updated`, `mount` salvo casos
-  simples): resolvé servicios con `app(BudgetService::class)`.
+- Full-page pages are mounted **embedded** in a wrapper view that applies the
+  layout: `resources/views/app/*.blade.php` contains `<x-layouts.app heading="..."><livewire:budget.dashboard/></x-layouts.app>`, and `routes/web.php` routes with `Route::view(...)`.
+- The layout is an anonymous component in `resources/views/components/layouts/app.blade.php`
+  (`<x-layouts.app>`), which includes the bottom-nav and the quick-add FAB.
+- In tests, `Livewire::test('budget.dashboard')` resolves by the same dotted name.
+- **Do not inject dependencies in lifecycle hooks** (`updated`, `mount` except simple
+  cases): resolve services with `app(BudgetService::class)`.
 
-## Arquitectura del dominio (el "por qué")
+## Domain architecture (the "why")
 
-**Dinero en centavos.** Todos los montos son enteros (minor units) para evitar floats.
-`App\Support\Money` formatea (es-AR) y parsea input. Nunca uses floats para plata.
+**Money in cents.** All amounts are integers (minor units) to avoid floats.
+`App\Support\Money` formats (es-AR) and parses input. Never use floats for money.
 
-**Multi-moneda.** Cada `Account` tiene `currency` (ARS/USD). Cada `Transaction` guarda
-`amount` (en la moneda de la cuenta), `exchange_rate` y `amount_base` (cache del monto
-en moneda base, calculado en `Transaction::saving`). **Toda la matemática de presupuesto
-opera sobre `amount_base`** para consolidar a la moneda base del presupuesto.
+**Multi-currency.** Each `Account` has a `currency` (ARS/USD). Each `Transaction` stores
+`amount` (in the account's currency), `exchange_rate`, and `amount_base` (cache of the amount
+in base currency, computed in `Transaction::saving`). **All budget math
+operates on `amount_base`** to consolidate to the budget's base currency.
 
-**`App\Services\BudgetService` es el corazón.** No dupliques su lógica en componentes.
-Mantiene este invariante (verificado por tests, no romperlo):
+**`App\Services\BudgetService` is the heart.** Do not duplicate its logic in components.
+It maintains this invariant (verified by tests, do not break it):
 
 ```
-saldo cuentas efectivo/banco on-budget = dinero por asignar + Σ disponible de categorías
+balance of on-budget cash/bank accounts = money to assign + Σ available of categories
 ```
 
-- `assigned/activity/available` son por categoría y mes; `available` es **acumulado**
-  (arrastre mes a mes: Σ de meses ≤ el dado).
-- `readyToAssign(budget)` = saldo de cuentas no-tarjeta − Σ disponible de todas las categorías.
-- Los meses se normalizan a `YYYY-MM-01`; las comparaciones usan `whereDate` (el campo
-  `month` puede traer componente horario).
+- `assigned/activity/available` are per category and month; `available` is **cumulative**
+  (carryover month to month: Σ of months ≤ the given one).
+- `readyToAssign(budget)` = balance of non-card accounts − Σ available of all categories.
+- Months are normalized to `YYYY-MM-01`; comparisons use `whereDate` (the
+  `month` field may carry a time component).
 
-**Tarjetas de crédito (reserva de fondos).** Al crear una `Account` tipo `credit_card`,
-un observer (`AccountObserver`) crea su categoría de pago en el grupo-sistema "Pagos de
-tarjeta" (`Category::linked_account_id` → cuenta). En el motor:
-- Las tarjetas se **excluyen del lado efectivo** del Ready-to-Assign (gastar a crédito no
-  cambia el RTA; reduce el disponible de la categoría del gasto).
-- La categoría de pago acumula los fondos de las compras a crédito (`creditFunded`) menos
-  los pagos hechos (`paymentActivity`). `payCreditCard()` registra el pago como
-  transferencia de dos patas (salida de efectivo categorizada al pago + entrada a la tarjeta).
-- Las categorías-sistema (con `linked_account_id`) y sus grupos no son editables por el usuario.
+**Credit cards (fund reservation).** When creating an `Account` of type `credit_card`,
+an observer (`AccountObserver`) creates its payment category in the system group "Pagos de
+tarjeta" (`Category::linked_account_id` → account). In the engine:
+- Cards are **excluded from the cash side** of Ready-to-Assign (spending on credit does not
+  change the RTA; it reduces the available of the expense's category).
+- The payment category accumulates the funds from credit purchases (`creditFunded`) minus
+  the payments made (`paymentActivity`). `payCreditCard()` records the payment as a
+  two-legged transfer (cash outflow categorized to the payment + inflow to the card).
+- System categories (with `linked_account_id`) and their groups are not editable by the user.
 
-**Categorías.** `CategoryGroup::categories()` devuelve solo las **activas** (oculta
-`archived_at`); `allCategories()` incluye archivadas. "Quitar" una categoría con historial
-la **archiva** (preserva reportes), sin historial la elimina. Reportes leen transacciones,
-no la relación, así que las archivadas con historial siguen apareciendo en reportes.
+**Categories.** `CategoryGroup::categories()` returns only the **active** ones (hides
+`archived_at`); `allCategories()` includes archived ones. "Removing" a category with history
+**archives** it (preserves reports), without history it deletes it. Reports read transactions,
+not the relation, so archived categories with history keep appearing in reports.
 
-**Auth y presupuesto familiar.** Login solo con Google (`GoogleController` + Socialite).
-`FamilyBudgetProvisioner` valida el email contra `config('budget.allowed_emails')`
-(env `ALLOWED_EMAILS`, coma-separado; el **primer** email es admin), crea/actualiza el
-usuario y lo asocia al **único** presupuesto familiar (sembrando categorías por defecto la
-primera vez). El middleware `whitelisted` revoca acceso si el email sale de la lista.
-Acceso al presupuesto del usuario actual: `auth()->user()->currentBudget()`.
+**Auth and family budget.** Login only with Google (`GoogleController` + Socialite).
+`FamilyBudgetProvisioner` validates the email against `config('budget.allowed_emails')`
+(env `ALLOWED_EMAILS`, comma-separated; the **first** email is admin), creates/updates the
+user and associates them with the **single** family budget (seeding default categories the
+first time). The `whitelisted` middleware revokes access if the email leaves the list.
+Access to the current user's budget: `auth()->user()->currentBudget()`.
 
-## Notas de producción
+## Production notes
 
-- `ALLOWED_EMAILS` y demás env se congelan con `config:cache` en el deploy: si cambian,
-  hay que redeployar. Ver `DEPLOY.md`.
-- `GOOGLE_REDIRECT_URI` debe coincidir exacto con la consola de Google y apuntar a
-  `/auth/google/callback`. `trustProxies('*')` está activo para HTTPS detrás del proxy.
+- `ALLOWED_EMAILS` and other env vars are frozen with `config:cache` on deploy: if they change,
+  you have to redeploy. See `DEPLOY.md`.
+- `GOOGLE_REDIRECT_URI` must match the Google console exactly and point to
+  `/auth/google/callback`. `trustProxies('*')` is active for HTTPS behind the proxy.
 
 ## Git
 
-Desarrollar en la branch `claude/laravel-family-budget-app-cnk8so`. **Siempre que se
-trabaje en una branch y se termine el trabajo, abrir un PR hacia `main`** (con los tests
-en verde). Evitar mencionar marcas registradas (p. ej. "YNAB") en código, docs,
-comentarios o mensajes de commit — usar términos genéricos (base-cero, dinero por asignar,
-antigüedad del dinero).
+Develop on the branch `claude/laravel-family-budget-app-cnk8so`. **Whenever you
+work on a branch and finish the work, open a PR to `main`** (with the tests
+green). Avoid mentioning trademarks (e.g. "YNAB") in code, docs,
+comments, or commit messages — use generic terms (zero-based, money to assign,
+age of money).
+</content>

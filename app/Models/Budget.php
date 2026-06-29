@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Budget extends Model
 {
     /**
-     * Miembros (usuarios) del presupuesto familiar.
+     * Members (users) of the family budget.
      *
      * @return BelongsToMany<User, $this>
      */

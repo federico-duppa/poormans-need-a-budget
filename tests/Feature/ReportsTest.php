@@ -14,7 +14,7 @@ function reportSetup(): array
     return ['budget' => $budget, 'account' => $account, 'svc' => app(ReportService::class)];
 }
 
-it('agrupa el gasto por categoría de mayor a menor', function () {
+it('groups spending by category from highest to lowest', function () {
     ['budget' => $b, 'account' => $acc, 'svc' => $svc] = reportSetup();
     $cats = $b->categoryGroups()->first()->categories;
     $super = $cats[0];
@@ -23,16 +23,16 @@ it('agrupa el gasto por categoría de mayor a menor', function () {
     Transaction::create(['account_id' => $acc->id, 'date' => '2026-06-05', 'amount' => -10000, 'currency' => 'ARS', 'category_id' => $super->id]);
     Transaction::create(['account_id' => $acc->id, 'date' => '2026-06-15', 'amount' => -5000, 'currency' => 'ARS', 'category_id' => $super->id]);
     Transaction::create(['account_id' => $acc->id, 'date' => '2026-06-20', 'amount' => -8000, 'currency' => 'ARS', 'category_id' => $transporte->id]);
-    Transaction::create(['account_id' => $acc->id, 'date' => '2026-06-21', 'amount' => 99999, 'currency' => 'ARS']); // ingreso, no cuenta
+    Transaction::create(['account_id' => $acc->id, 'date' => '2026-06-21', 'amount' => 99999, 'currency' => 'ARS']); // income, does not count
 
     $report = $svc->spendingByCategory($b, '2026-06');
 
     expect($report)->toHaveCount(2);
-    expect($report[0]['total'])->toBe(15000)         // super, el mayor
-        ->and($report[1]['total'])->toBe(8000);      // transporte
+    expect($report[0]['total'])->toBe(15000)         // groceries, the largest
+        ->and($report[1]['total'])->toBe(8000);      // transport
 });
 
-it('calcula ingreso vs egreso del mes', function () {
+it('computes income vs expense for the month', function () {
     ['budget' => $b, 'account' => $acc, 'svc' => $svc] = reportSetup();
 
     Transaction::create(['account_id' => $acc->id, 'date' => '2026-06-01', 'amount' => 500000, 'currency' => 'ARS']);
@@ -45,23 +45,23 @@ it('calcula ingreso vs egreso del mes', function () {
         ->and($report[0]['expense'])->toBe(120000);
 });
 
-it('calcula la antigüedad del dinero con FIFO', function () {
+it('computes the age of money with FIFO', function () {
     ['budget' => $b, 'account' => $acc, 'svc' => $svc] = reportSetup();
 
     Transaction::create(['account_id' => $acc->id, 'date' => '2026-06-01', 'amount' => 100000, 'currency' => 'ARS']);
-    Transaction::create(['account_id' => $acc->id, 'date' => '2026-06-11', 'amount' => -10000, 'currency' => 'ARS']); // 10 días
-    Transaction::create(['account_id' => $acc->id, 'date' => '2026-06-21', 'amount' => -10000, 'currency' => 'ARS']); // 20 días
+    Transaction::create(['account_id' => $acc->id, 'date' => '2026-06-11', 'amount' => -10000, 'currency' => 'ARS']); // 10 days
+    Transaction::create(['account_id' => $acc->id, 'date' => '2026-06-21', 'amount' => -10000, 'currency' => 'ARS']); // 20 days
 
     expect($svc->ageOfMoney($b, '2026-06-30'))->toBe(15);
 });
 
-it('devuelve null en la antigüedad del dinero sin egresos', function () {
+it('returns null for the age of money with no outflows', function () {
     ['budget' => $b, 'svc' => $svc] = reportSetup();
 
     expect($svc->ageOfMoney($b))->toBeNull();
 });
 
-it('renderiza la página de reportes', function () {
+it('renders the reports page', function () {
     loginFamilyUser();
 
     $this->get(route('reports'))

@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('transaction_id')->constrained()->cascadeOnDelete();
             $table->foreignId('category_id')->nullable()->constrained()->nullOnDelete();
-            $table->bigInteger('amount'); // centavos, mismo signo que la transacción
+            $table->bigInteger('amount'); // cents, same sign as the transaction
             $table->string('memo')->nullable();
             $table->timestamps();
 

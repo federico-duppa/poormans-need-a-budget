@@ -10,7 +10,7 @@ Route::get('/', function () {
         : redirect()->route('login');
 })->name('home');
 
-// --- Autenticación ---------------------------------------------------------
+// --- Authentication --------------------------------------------------------
 Route::middleware('guest')->group(function () {
     Route::view('/login', 'welcome')->name('login');
 
@@ -24,7 +24,7 @@ Route::post('/logout', [GoogleController::class, 'logout'])
     ->middleware('auth')
     ->name('logout');
 
-// --- App (autenticada + whitelist) ----------------------------------------
+// --- App (authenticated + whitelist) --------------------------------------
 Route::middleware(['auth', 'whitelisted'])->group(function () {
     Route::view('/budget', 'app.budget')->name('budget');
     Route::view('/accounts', 'app.accounts')->name('accounts');

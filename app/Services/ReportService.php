@@ -10,7 +10,7 @@ use Illuminate\Support\Collection;
 class ReportService
 {
     /**
-     * Gasto por categoría en un mes (montos positivos), de mayor a menor.
+     * Spending by category in a month (positive amounts), highest to lowest.
      *
      * @return Collection<int, array{name: string, group: string, total: int}>
      */
@@ -39,7 +39,7 @@ class ReportService
     }
 
     /**
-     * Ingreso vs egreso por mes, para los últimos N meses (incluido el actual).
+     * Income vs expense by month, for the last N months (including the current one).
      *
      * @return Collection<int, array{month: string, label: string, income: int, expense: int}>
      */
@@ -78,11 +78,11 @@ class ReportService
     }
 
     /**
-     * Antigüedad del dinero: edad promedio del dinero gastado, en días.
+     * Age of money: average age of money spent, in days.
      *
-     * Usa FIFO: empareja cada egreso con los ingresos más antiguos disponibles
-     * y promedia (ponderado por monto) la antigüedad de los últimos 10 egresos.
-     * Solo considera cuentas de efectivo/banco (no tarjetas).
+     * Uses FIFO: matches each outflow with the oldest available inflows
+     * and averages (weighted by amount) the age of the last 10 outflows.
+     * Only considers cash/bank accounts (not cards).
      */
     public function ageOfMoney(Budget $budget, ?string $until = null): ?int
     {
@@ -98,7 +98,7 @@ class ReportService
             ->orderBy('date')->orderBy('id')
             ->get(['date', 'amount_base']);
 
-        // Cola FIFO de ingresos disponibles: [['date'=>CarbonImmutable, 'remaining'=>int]]
+        // FIFO queue of available inflows: [['date'=>CarbonImmutable, 'remaining'=>int]]
         $inflows = [];
         $outflowAges = []; // [['age'=>int, 'amount'=>int]]
 
@@ -141,7 +141,7 @@ class ReportService
             return null;
         }
 
-        // Promedio ponderado de los últimos 10 egresos.
+        // Weighted average of the last 10 outflows.
         $recent = array_slice($outflowAges, -10);
         $totalAmount = array_sum(array_column($recent, 'amount'));
         if ($totalAmount === 0) {

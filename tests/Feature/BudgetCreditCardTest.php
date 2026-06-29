@@ -39,7 +39,7 @@ function totalAvailable(Budget $budget, BudgetService $svc, string $month): int
     return $total;
 }
 
-it('crea automáticamente la categoría de pago al dar de alta una tarjeta', function () {
+it('automatically creates the payment category when adding a card', function () {
     ['card' => $card, 'budget' => $budget] = ccSetup();
 
     $payment = $card->paymentCategory()->first();
@@ -49,47 +49,47 @@ it('crea automáticamente la categoría de pago al dar de alta una tarjeta', fun
         ->and($payment->group->name)->toBe('Pagos de tarjeta');
 });
 
-it('reserva fondos en la categoría de pago al gastar con tarjeta', function () {
+it('reserves funds in the payment category when spending with a card', function () {
     ['budget' => $b, 'cash' => $cash, 'card' => $card, 'groceries' => $g, 'payment' => $p, 'svc' => $svc] = ccSetup();
 
-    // Ingreso a efectivo + asignación a super
+    // Cash inflow + assignment to groceries
     Transaction::create(['account_id' => $cash->id, 'date' => '2026-06-01', 'amount' => 100000, 'currency' => 'ARS']);
     $svc->assign($b, $g, '2026-06', 50000);
 
-    // Compra a crédito de 30000 en super
+    // Credit purchase of 30000 in groceries
     Transaction::create(['account_id' => $card->id, 'date' => '2026-06-10', 'amount' => -30000, 'currency' => 'ARS', 'category_id' => $g->id]);
 
     expect($svc->available($b, $g, '2026-06'))->toBe(20000)      // 50000 - 30000
-        ->and($svc->available($b, $p, '2026-06'))->toBe(30000)   // reservado para pagar
-        ->and($svc->readyToAssign($b))->toBe(50000);             // 100000 - 50000 (no cambia por gastar a crédito)
+        ->and($svc->available($b, $p, '2026-06'))->toBe(30000)   // reserved to pay
+        ->and($svc->readyToAssign($b))->toBe(50000);             // 100000 - 50000 (does not change from spending on credit)
 });
 
-it('mantiene el invariante tras una compra a crédito', function () {
+it('keeps the invariant after a credit purchase', function () {
     ['budget' => $b, 'cash' => $cash, 'card' => $card, 'groceries' => $g, 'svc' => $svc] = ccSetup();
 
     Transaction::create(['account_id' => $cash->id, 'date' => '2026-06-01', 'amount' => 100000, 'currency' => 'ARS']);
     $svc->assign($b, $g, '2026-06', 50000);
     Transaction::create(['account_id' => $card->id, 'date' => '2026-06-10', 'amount' => -30000, 'currency' => 'ARS', 'category_id' => $g->id]);
 
-    $cashBalance = $cash->balance(); // 100000 (la tarjeta se excluye del lado efectivo)
+    $cashBalance = $cash->balance(); // 100000 (the card is excluded from the cash side)
     expect($cashBalance)->toBe($svc->readyToAssign($b) + totalAvailable($b, $svc, '2026-06'));
 });
 
-it('liquida la categoría de pago al pagar la tarjeta', function () {
+it('settles the payment category when paying the card', function () {
     ['budget' => $b, 'cash' => $cash, 'card' => $card, 'groceries' => $g, 'payment' => $p, 'svc' => $svc] = ccSetup();
 
     Transaction::create(['account_id' => $cash->id, 'date' => '2026-06-01', 'amount' => 100000, 'currency' => 'ARS']);
     $svc->assign($b, $g, '2026-06', 50000);
     Transaction::create(['account_id' => $card->id, 'date' => '2026-06-10', 'amount' => -30000, 'currency' => 'ARS', 'category_id' => $g->id]);
 
-    // Pago la tarjeta: 30000 desde el banco
+    // Pay the card: 30000 from the bank
     $svc->payCreditCard($cash, $card, 30000, '2026-06-20');
 
-    expect($card->balance())->toBe(0)                          // deuda saldada
-        ->and($svc->available($b, $p, '2026-06'))->toBe(0)     // ya no hay que reservar
+    expect($card->balance())->toBe(0)                          // debt settled
+        ->and($svc->available($b, $p, '2026-06'))->toBe(0)     // nothing left to reserve
         ->and($cash->balance())->toBe(70000)                   // 100000 - 30000
-        ->and($svc->readyToAssign($b))->toBe(50000);           // RTA no cambia al pagar
+        ->and($svc->readyToAssign($b))->toBe(50000);           // RTA does not change on payment
 
-    // Invariante sigue valiendo
+    // Invariant still holds
     expect($cash->balance())->toBe($svc->readyToAssign($b) + totalAvailable($b, $svc, '2026-06'));
 });

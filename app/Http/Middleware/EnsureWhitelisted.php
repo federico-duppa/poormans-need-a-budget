@@ -11,8 +11,8 @@ use Symfony\Component\HttpFoundation\Response;
 class EnsureWhitelisted
 {
     /**
-     * Garantiza que el usuario autenticado siga estando en la whitelist.
-     * Si su email fue removido de ALLOWED_EMAILS, se cierra la sesión.
+     * Ensure the authenticated user is still on the whitelist.
+     * If their email was removed from ALLOWED_EMAILS, the session is closed.
      */
     public function handle(Request $request, Closure $next): Response
     {

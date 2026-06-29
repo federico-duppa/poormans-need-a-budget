@@ -23,13 +23,13 @@ class CategoryGroup extends Model
         return $this->belongsTo(Budget::class);
     }
 
-    /** Categorías activas (no archivadas). @return HasMany<Category, $this> */
+    /** Active (non-archived) categories. @return HasMany<Category, $this> */
     public function categories(): HasMany
     {
         return $this->hasMany(Category::class)->whereNull('archived_at')->orderBy('position');
     }
 
-    /** Todas las categorías, incluidas las archivadas. @return HasMany<Category, $this> */
+    /** All categories, including archived ones. @return HasMany<Category, $this> */
     public function allCategories(): HasMany
     {
         return $this->hasMany(Category::class)->orderBy('position');
