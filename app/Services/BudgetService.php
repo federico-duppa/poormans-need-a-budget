@@ -199,6 +199,149 @@ class BudgetService
     }
 
     /**
+     * Fast path for the dashboard: compute assigned/activity/available for every
+     * category of the budget in one month using a handful of aggregate queries
+     * (grouped by category/account) instead of per-category queries. Returns the
+     * ordered groups with enriched categories plus the global ready-to-assign.
+     *
+     * Produces the same numbers as assigned()/activity()/available() per category.
+     *
+     * @return array{readyToAssign: int, groups: array<int, array{id: int, name: string, is_system: bool, categories: array<int, array{id: int, name: string, assigned: int, activity: int, available: int}>}>}
+     */
+    public function monthlySummary(Budget $budget, string|CarbonImmutable|Carbon $month): array
+    {
+        $monthStart = CarbonImmutable::parse($this->normalizeMonth($month))->startOfMonth();
+        $monthEnd = $monthStart->endOfMonth();
+        $monthDate = $monthStart->toDateString();
+
+        $onBudgetIds = $this->onBudgetAccountIds($budget);
+        $ccIds = $this->creditCardAccountIds($budget);
+        $paymentCatIds = $this->paymentCategoryIds($budget);
+
+        // Aggregates grouped by category / card account.
+        $cumActivity = $this->sumActivityByCategory($onBudgetIds, null, $monthEnd);
+        $monthActivity = $this->sumActivityByCategory($onBudgetIds, $monthStart, $monthEnd);
+        $cumAssigned = $this->sumAssignedByCategory($budget, null, $monthEnd);
+        $monthAssigned = $this->sumAssignedByCategory($budget, $monthDate, $monthEnd);
+        $cumFunded = $this->sumCreditSpendByCard($ccIds, $paymentCatIds, null, $monthEnd);
+        $monthFunded = $this->sumCreditSpendByCard($ccIds, $paymentCatIds, $monthStart, $monthEnd);
+
+        $groups = [];
+        foreach ($budget->categoryGroups()->with('categories')->orderBy('position')->get() as $group) {
+            $categories = [];
+            foreach ($group->categories as $cat) {
+                if ($cat->linked_account_id !== null) {
+                    // Payment category: funded by credit purchases on its card, drawn down by payments.
+                    $cardId = $cat->linked_account_id;
+                    $assigned = $monthAssigned[$cat->id] ?? 0;
+                    $available = ($cumAssigned[$cat->id] ?? 0)
+                        + (-($cumFunded[$cardId] ?? 0))
+                        + ($cumActivity[$cat->id] ?? 0);
+                    $activity = (-($monthFunded[$cardId] ?? 0)) + ($monthActivity[$cat->id] ?? 0);
+                } else {
+                    $assigned = $monthAssigned[$cat->id] ?? 0;
+                    $activity = $monthActivity[$cat->id] ?? 0;
+                    $available = ($cumAssigned[$cat->id] ?? 0) + ($cumActivity[$cat->id] ?? 0);
+                }
+
+                $categories[] = [
+                    'id' => $cat->id,
+                    'name' => $cat->name,
+                    'assigned' => $assigned,
+                    'activity' => $activity,
+                    'available' => $available,
+                ];
+            }
+
+            $groups[] = [
+                'id' => $group->id,
+                'name' => $group->name,
+                'is_system' => (bool) $group->is_system,
+                'categories' => $categories,
+            ];
+        }
+
+        return [
+            'readyToAssign' => $this->readyToAssign($budget),
+            'groups' => $groups,
+        ];
+    }
+
+    /**
+     * SUM(amount_base) of categorized transactions, grouped by category_id.
+     *
+     * @param  array<int, int>  $accountIds
+     * @return array<int, int>
+     */
+    protected function sumActivityByCategory(array $accountIds, ?CarbonImmutable $start, CarbonImmutable $end): array
+    {
+        if (empty($accountIds)) {
+            return [];
+        }
+
+        return Transaction::query()
+            ->whereIn('account_id', $accountIds)
+            ->whereNotNull('category_id')
+            ->when($start, fn ($q) => $q->whereDate('date', '>=', $start))
+            ->whereDate('date', '<=', $end)
+            ->groupBy('category_id')
+            ->selectRaw('category_id, SUM(amount_base) as total')
+            ->get()
+            ->mapWithKeys(fn ($row) => [(int) $row->category_id => (int) $row->total])
+            ->all();
+    }
+
+    /**
+     * SUM(assigned) grouped by category_id. With $monthExact, only that month;
+     * otherwise everything up to (and including) $monthEnd.
+     *
+     * @return array<int, int>
+     */
+    protected function sumAssignedByCategory(Budget $budget, ?string $monthExact, CarbonImmutable $monthEnd): array
+    {
+        $query = CategoryMonth::query()
+            ->join('monthly_budgets', 'monthly_budgets.id', '=', 'category_months.monthly_budget_id')
+            ->where('monthly_budgets.budget_id', $budget->id);
+
+        $monthExact !== null
+            ? $query->whereDate('monthly_budgets.month', $monthExact)
+            : $query->whereDate('monthly_budgets.month', '<=', $monthEnd);
+
+        return $query
+            ->groupBy('category_months.category_id')
+            ->selectRaw('category_months.category_id as cid, SUM(category_months.assigned) as total')
+            ->get()
+            ->mapWithKeys(fn ($row) => [(int) $row->cid => (int) $row->total])
+            ->all();
+    }
+
+    /**
+     * SUM(amount_base) of credit purchases (categorized, non-payment), grouped by card account.
+     *
+     * @param  array<int, int>  $ccIds
+     * @param  array<int, int>  $paymentCatIds
+     * @return array<int, int>
+     */
+    protected function sumCreditSpendByCard(array $ccIds, array $paymentCatIds, ?CarbonImmutable $start, CarbonImmutable $end): array
+    {
+        if (empty($ccIds)) {
+            return [];
+        }
+
+        return Transaction::query()
+            ->whereIn('account_id', $ccIds)
+            ->whereNotNull('category_id')
+            ->when(! empty($paymentCatIds), fn ($q) => $q->whereNotIn('category_id', $paymentCatIds))
+            ->when($start, fn ($q) => $q->whereDate('date', '>=', $start))
+            ->whereDate('date', '<=', $end)
+            ->groupBy('account_id')
+            ->selectRaw('account_id, SUM(amount_base) as total')
+            ->get()
+            ->mapWithKeys(fn ($row) => [(int) $row->account_id => (int) $row->total])
+            ->all();
+    }
+
+    /**
      * Record a card payment as a two-legged transfer:
      *  - outflow from the cash account, categorized to the payment category
      *  - inflow to the card (reduces the debt), without a category
@@ -270,13 +413,30 @@ class BudgetService
     }
 
     /**
+     * Budget accounts, loaded once per service instance to avoid repeated
+     * queries when deriving the id sets below.
+     *
+     * @return \Illuminate\Support\Collection<int, Account>
+     */
+    protected function accountsOf(Budget $budget): \Illuminate\Support\Collection
+    {
+        return $this->accountsCache[$budget->id] ??= $budget->accounts()->get(['id', 'type', 'on_budget']);
+    }
+
+    /** @var array<int, \Illuminate\Support\Collection<int, Account>> */
+    private array $accountsCache = [];
+
+    /** @var array<int, array<int, int>> */
+    private array $paymentCatCache = [];
+
+    /**
      * IDs of on-budget accounts (includes credit cards).
      *
      * @return array<int, int>
      */
     protected function onBudgetAccountIds(Budget $budget): array
     {
-        return $budget->accounts()->where('on_budget', true)->pluck('id')->all();
+        return $this->accountsOf($budget)->where('on_budget', true)->pluck('id')->all();
     }
 
     /**
@@ -286,14 +446,14 @@ class BudgetService
      */
     protected function cashAccountIds(Budget $budget): array
     {
-        return $budget->accounts()->where('on_budget', true)
+        return $this->accountsOf($budget)->where('on_budget', true)
             ->where('type', '!=', 'credit_card')->pluck('id')->all();
     }
 
     /** @return array<int, int> */
     protected function creditCardAccountIds(Budget $budget): array
     {
-        return $budget->accounts()->where('type', 'credit_card')->pluck('id')->all();
+        return $this->accountsOf($budget)->where('type', 'credit_card')->pluck('id')->all();
     }
 
     /**
@@ -303,7 +463,7 @@ class BudgetService
      */
     protected function paymentCategoryIds(Budget $budget): array
     {
-        return Category::query()
+        return $this->paymentCatCache[$budget->id] ??= Category::query()
             ->whereNotNull('linked_account_id')
             ->whereHas('group', fn ($q) => $q->where('budget_id', $budget->id))
             ->pluck('id')->all();
