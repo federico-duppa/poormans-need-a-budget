@@ -28,14 +28,14 @@ class Transaction extends Model
 
     protected static function booted(): void
     {
-        // Mantiene amount_base (monto en moneda base) coherente al guardar.
+        // Keeps amount_base (amount in base currency) consistent on save.
         static::saving(function (Transaction $transaction) {
             $transaction->amount_base = $transaction->computeAmountBase();
         });
     }
 
     /**
-     * Monto convertido a la moneda base del presupuesto (centavos).
+     * Amount converted to the budget's base currency (cents).
      */
     public function computeAmountBase(): int
     {
@@ -64,7 +64,7 @@ class Transaction extends Model
         return $this->belongsTo(Category::class);
     }
 
-    /** Autor del movimiento dentro del grupo familiar. @return BelongsTo<User, $this> */
+    /** Author of the transaction within the family group. @return BelongsTo<User, $this> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -93,7 +93,7 @@ class Transaction extends Model
     }
 
     /**
-     * Primer día del mes presupuestario al que pertenece (YYYY-MM-01).
+     * First day of the budget month it belongs to (YYYY-MM-01).
      */
     public function budgetMonth(): string
     {

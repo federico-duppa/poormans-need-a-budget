@@ -13,7 +13,7 @@ return new class extends Migration
             $table->foreignId('budget_id')->constrained()->cascadeOnDelete();
             $table->string('name');
             $table->unsignedInteger('position')->default(0);
-            $table->boolean('is_system')->default(false); // ej: "Pagos de tarjeta"
+            $table->boolean('is_system')->default(false); // e.g.: "Pagos de tarjeta"
             $table->timestamps();
 
             $table->index('budget_id');

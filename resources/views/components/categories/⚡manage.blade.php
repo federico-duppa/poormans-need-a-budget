@@ -221,7 +221,7 @@ new class extends Component
         </div>
     @endforeach
 
-    {{-- Nuevo grupo --}}
+    {{-- New group --}}
     <div class="rounded-2xl border border-dashed border-slate-300 bg-white p-3">
         <label class="mb-1 block text-xs font-medium text-slate-500">Nuevo grupo</label>
         <div class="flex items-center gap-2">

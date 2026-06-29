@@ -41,7 +41,7 @@ class Account extends Model
         return $this->hasMany(Transaction::class);
     }
 
-    /** Categoría de pago asociada (solo tarjetas de crédito). @return HasMany<Category, $this> */
+    /** Associated payment category (credit cards only). @return HasMany<Category, $this> */
     public function paymentCategory()
     {
         return $this->hasOne(Category::class, 'linked_account_id');
@@ -59,7 +59,7 @@ class Account extends Model
     }
 
     /**
-     * Saldo de la cuenta en centavos (suma de todas sus transacciones).
+     * Account balance in cents (sum of all its transactions).
      */
     public function balance(): int
     {

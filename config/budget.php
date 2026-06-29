@@ -4,12 +4,12 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Emails habilitados (whitelist)
+    | Allowed emails (whitelist)
     |--------------------------------------------------------------------------
     |
-    | Solo los emails de esta lista pueden iniciar sesión vía Google. Se define
-    | en la variable de entorno ALLOWED_EMAILS, separados por coma. El primero
-    | de la lista queda marcado como administrador del presupuesto familiar.
+    | Only the emails in this list can log in via Google. It is defined
+    | in the ALLOWED_EMAILS environment variable, comma-separated. The first
+    | one in the list is marked as the administrator of the family budget.
     |
     */
 
@@ -20,11 +20,11 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Monedas
+    | Currencies
     |--------------------------------------------------------------------------
     |
-    | Moneda base del presupuesto (en la que se consolidan el dinero por asignar y
-    | reportes) y moneda secundaria soportada para cuentas/transacciones.
+    | The budget's base currency (in which the money to assign and reports are
+    | consolidated) and the supported secondary currency for accounts/transactions.
     |
     */
 

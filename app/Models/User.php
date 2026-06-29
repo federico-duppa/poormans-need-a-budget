@@ -32,7 +32,7 @@ class User extends Authenticatable
     }
 
     /**
-     * Presupuestos a los que pertenece el usuario.
+     * Budgets the user belongs to.
      *
      * @return BelongsToMany<Budget, $this>
      */
@@ -44,7 +44,7 @@ class User extends Authenticatable
     }
 
     /**
-     * El presupuesto familiar activo del usuario (MVP: uno solo).
+     * The user's active family budget (MVP: only one).
      */
     public function currentBudget(): ?Budget
     {
@@ -52,7 +52,7 @@ class User extends Authenticatable
     }
 
     /**
-     * ¿Es administrador de algún presupuesto?
+     * Is the user an administrator of any budget?
      */
     public function isAdmin(): bool
     {

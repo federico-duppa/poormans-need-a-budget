@@ -12,7 +12,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // Detrás del proxy de Laravel Cloud, para que URLs y redirects sean HTTPS.
+        // Behind the Laravel Cloud proxy, so that URLs and redirects are HTTPS.
         $middleware->trustProxies(at: '*');
 
         $middleware->alias([

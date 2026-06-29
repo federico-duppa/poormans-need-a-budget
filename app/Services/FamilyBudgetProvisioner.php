@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 class FamilyBudgetProvisioner
 {
     /**
-     * Lista normalizada de emails habilitados.
+     * Normalized list of allowed emails.
      *
      * @return array<int, string>
      */
@@ -19,7 +19,7 @@ class FamilyBudgetProvisioner
     }
 
     /**
-     * ¿El email está habilitado para entrar?
+     * Is the email allowed to log in?
      */
     public static function isAllowed(string $email): bool
     {
@@ -27,8 +27,8 @@ class FamilyBudgetProvisioner
     }
 
     /**
-     * Crea/actualiza el usuario a partir de los datos de Google y lo asocia al
-     * presupuesto familiar. El primer email de la whitelist es administrador.
+     * Create/update the user from the Google data and associate them with the
+     * family budget. The first email in the whitelist is the administrator.
      *
      * @param  array{name?: string|null, email: string, google_id?: string|null, avatar?: string|null}  $data
      */
@@ -59,8 +59,8 @@ class FamilyBudgetProvisioner
     }
 
     /**
-     * El presupuesto familiar (MVP: único). Lo crea (con categorías por
-     * defecto) si todavía no existe.
+     * The family budget (MVP: single). Creates it (with default
+     * categories) if it does not yet exist.
      */
     public function familyBudget(): Budget
     {
@@ -80,7 +80,7 @@ class FamilyBudgetProvisioner
     }
 
     /**
-     * Categorías iniciales típicas de un presupuesto familiar.
+     * Typical initial categories of a family budget.
      */
     protected function seedDefaultCategories(Budget $budget): void
     {

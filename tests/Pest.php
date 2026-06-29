@@ -45,8 +45,8 @@ expect()->extend('toBeOne', function () {
 */
 
 /**
- * Crea (whitelist + provisioning) y autentica a un usuario del presupuesto
- * familiar, devolviéndolo. Útil para tests de componentes/rutas autenticadas.
+ * Create (whitelist + provisioning) and authenticate a family budget user,
+ * returning them. Useful for tests of authenticated components/routes.
  */
 function loginFamilyUser(string $email = 'owner@example.com'): \App\Models\User
 {

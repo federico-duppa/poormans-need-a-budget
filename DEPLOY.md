@@ -1,35 +1,35 @@
-# Deploy a Laravel Cloud
+# Deploy to Laravel Cloud
 
-Esta app está lista para deployarse en [Laravel Cloud](https://cloud.laravel.com).
-Usa **PostgreSQL** en producción y **SQLite** en desarrollo (el driver se elige
-por la variable `DB_CONNECTION`).
+This app is ready to be deployed on [Laravel Cloud](https://cloud.laravel.com).
+It uses **PostgreSQL** in production and **SQLite** in development (the driver is
+chosen by the `DB_CONNECTION` variable).
 
-## 1. Crear el proyecto en Laravel Cloud
+## 1. Create the project in Laravel Cloud
 
-1. Conectá el repo de GitHub `federico-duppa/poormans-need-a-budget`.
-2. Elegí la branch a deployar.
-3. Laravel Cloud detecta Laravel automáticamente y corre:
+1. Connect the GitHub repo `federico-duppa/poormans-need-a-budget`.
+2. Choose the branch to deploy.
+3. Laravel Cloud detects Laravel automatically and runs:
    - `composer install --no-dev`
-   - `npm ci && npm run build` (compila Tailwind/Vite — `public/build` no se versiona)
-   - El **deploy command** debe incluir las migraciones.
+   - `npm ci && npm run build` (compiles Tailwind/Vite — `public/build` is not versioned)
+   - The **deploy command** must include the migrations.
 
-## 2. Base de datos
+## 2. Database
 
-Creá una base **PostgreSQL** gestionada en Laravel Cloud y vinculala al entorno.
-Laravel Cloud inyecta las credenciales (`DB_*`). Asegurate de:
+Create a managed **PostgreSQL** database in Laravel Cloud and link it to the environment.
+Laravel Cloud injects the credentials (`DB_*`). Make sure to:
 
 ```
 DB_CONNECTION=pgsql
 ```
 
-(El resto — host, puerto, base, usuario, password — lo provee Laravel Cloud.)
+(The rest — host, port, database, user, password — is provided by Laravel Cloud.)
 
-Las tablas de sesión, cache y colas usan la base (drivers `database`), así que
-las migraciones por defecto ya las crean.
+The session, cache, and queue tables use the database (`database` drivers), so
+the default migrations already create them.
 
 ## 3. Deploy command
 
-Configurá el deploy command del entorno:
+Configure the environment's deploy command:
 
 ```bash
 php artisan migrate --force
@@ -38,45 +38,46 @@ php artisan route:cache
 php artisan view:cache
 ```
 
-## 4. Variables de entorno (producción)
+## 4. Environment variables (production)
 
-| Variable | Valor |
+| Variable | Value |
 |---|---|
 | `APP_NAME` | `"Poorman's Budget"` |
 | `APP_ENV` | `production` |
-| `APP_KEY` | generar con `php artisan key:generate --show` y pegar |
+| `APP_KEY` | generate with `php artisan key:generate --show` and paste |
 | `APP_DEBUG` | `false` |
-| `APP_URL` | `https://tu-dominio.laravel.cloud` |
+| `APP_URL` | `https://your-domain.laravel.cloud` |
 | `APP_LOCALE` | `es` |
 | `DB_CONNECTION` | `pgsql` |
 | `SESSION_DRIVER` | `database` |
 | `CACHE_STORE` | `database` |
 | `QUEUE_CONNECTION` | `database` |
-| `ALLOWED_EMAILS` | `tu-email@gmail.com` (coma-separado; el primero es admin) |
+| `ALLOWED_EMAILS` | `your-email@gmail.com` (comma-separated; the first is admin) |
 | `BUDGET_BASE_CURRENCY` | `ARS` |
 | `BUDGET_SECONDARY_CURRENCY` | `USD` |
-| `GOOGLE_CLIENT_ID` | (de Google Cloud Console) |
-| `GOOGLE_CLIENT_SECRET` | (de Google Cloud Console) |
-| `GOOGLE_REDIRECT_URI` | `https://tu-dominio.laravel.cloud/auth/google/callback` |
+| `GOOGLE_CLIENT_ID` | (from Google Cloud Console) |
+| `GOOGLE_CLIENT_SECRET` | (from Google Cloud Console) |
+| `GOOGLE_REDIRECT_URI` | `https://your-domain.laravel.cloud/auth/google/callback` |
 
 ## 5. Google OAuth
 
-En [Google Cloud Console](https://console.cloud.google.com) → *APIs & Services*
-→ *Credentials* → *OAuth client ID* (tipo *Web application*):
+In [Google Cloud Console](https://console.cloud.google.com) → *APIs & Services*
+→ *Credentials* → *OAuth client ID* (type *Web application*):
 
-- **Authorized redirect URI:** `https://tu-dominio.laravel.cloud/auth/google/callback`
-  (debe coincidir exactamente con `GOOGLE_REDIRECT_URI`).
-- Copiá el *Client ID* y *Client secret* a las variables de entorno.
+- **Authorized redirect URI:** `https://your-domain.laravel.cloud/auth/google/callback`
+  (must match `GOOGLE_REDIRECT_URI` exactly).
+- Copy the *Client ID* and *Client secret* into the environment variables.
 
-## 6. Primer login
+## 6. First login
 
-Entrá con el email que pusiste en `ALLOWED_EMAILS`. El primer email de la lista
-queda como administrador y se crea automáticamente el presupuesto familiar con
-categorías por defecto. Para sumar familia, agregá sus emails a `ALLOWED_EMAILS`
-y que inicien sesión con Google.
+Log in with the email you set in `ALLOWED_EMAILS`. The first email in the list
+becomes the administrator and the family budget is created automatically with
+default categories. To add family members, add their emails to `ALLOWED_EMAILS`
+and have them log in with Google.
 
-## Notas
+## Notes
 
-- La app trustea el proxy de Laravel Cloud (`trustProxies`), así los redirects y
-  URLs se generan en HTTPS.
-- Healthcheck disponible en `/up`.
+- The app trusts the Laravel Cloud proxy (`trustProxies`), so redirects and
+  URLs are generated over HTTPS.
+- Healthcheck available at `/up`.
+</content>

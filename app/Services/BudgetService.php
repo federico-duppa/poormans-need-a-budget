@@ -12,26 +12,26 @@ use Carbon\CarbonImmutable;
 use Illuminate\Support\Carbon;
 
 /**
- * Motor de presupuesto base-cero (método de sobres).
+ * Zero-based budget engine (envelope method).
  *
- * Invariante fundamental:
- *   saldo total de cuentas on-budget = dinero por asignar + Σ disponible de categorías
+ * Core invariant:
+ *   total balance of on-budget accounts = money to assign + Σ available of categories
  *
- * Todos los montos se manejan en centavos de la moneda base del presupuesto
- * (campo amount_base de las transacciones).
+ * All amounts are handled in cents of the budget's base currency
+ * (the amount_base field of transactions).
  *
- * Arrastre (flexibilidad mes a mes): el "disponible" de una categoría es
- * acumulativo: Σ (asignado + actividad) de todos los meses hasta el mes dado.
+ * Carryover (month-to-month flexibility): a category's "available" is
+ * cumulative: Σ (assigned + activity) of all months up to the given month.
  */
 class BudgetService
 {
     /**
-     * Normaliza un mes a la fecha del primer día (YYYY-MM-01).
+     * Normalize a month to its first-day date (YYYY-MM-01).
      */
     public function normalizeMonth(string|CarbonImmutable|Carbon $month): string
     {
         if (is_string($month)) {
-            // Acepta "YYYY-MM" o "YYYY-MM-DD".
+            // Accepts "YYYY-MM" or "YYYY-MM-DD".
             $month = CarbonImmutable::parse(strlen($month) === 7 ? $month.'-01' : $month);
         }
 
@@ -39,13 +39,13 @@ class BudgetService
     }
 
     /**
-     * Devuelve (creando si falta) el mes presupuestario.
+     * Return (creating it if missing) the budget month.
      */
     public function monthlyBudget(Budget $budget, string|CarbonImmutable|Carbon $month): MonthlyBudget
     {
         $monthDate = $this->normalizeMonth($month);
 
-        // whereDate evita falsos negativos por el componente horario del campo date.
+        // whereDate avoids false negatives from the time component of the date field.
         $existing = MonthlyBudget::query()
             ->where('budget_id', $budget->id)
             ->whereDate('month', $monthDate)
@@ -58,7 +58,7 @@ class BudgetService
     }
 
     /**
-     * Asigna (fija) un monto a una categoría en un mes dado.
+     * Assign (set) an amount to a category in a given month.
      */
     public function assign(Budget $budget, Category $category, string|CarbonImmutable|Carbon $month, int $cents): CategoryMonth
     {
@@ -74,7 +74,7 @@ class BudgetService
     }
 
     /**
-     * Mueve dinero de una categoría a otra dentro del mismo mes.
+     * Move money from one category to another within the same month.
      */
     public function move(Budget $budget, Category $from, Category $to, string|CarbonImmutable|Carbon $month, int $cents): void
     {
@@ -83,7 +83,7 @@ class BudgetService
     }
 
     /**
-     * Monto asignado a una categoría en un mes (0 si no hay registro).
+     * Amount assigned to a category in a month (0 if there is no record).
      */
     public function assigned(Budget $budget, Category $category, string|CarbonImmutable|Carbon $month): int
     {
@@ -98,12 +98,12 @@ class BudgetService
     }
 
     /**
-     * Actividad (suma de movimientos) de una categoría en un mes, en moneda base.
-     * Negativo = gasto.
+     * Activity (sum of transactions) of a category in a month, in base currency.
+     * Negative = expense.
      *
-     * Para categorías de pago de tarjeta, la "actividad" del mes combina los
-     * fondos que ingresan desde las compras a crédito (positivo) y los pagos
-     * realizados a la tarjeta (negativo).
+     * For credit card payment categories, the month's "activity" combines the
+     * funds coming in from credit purchases (positive) and the payments
+     * made to the card (negative).
      */
     public function activity(Budget $budget, Category $category, string|CarbonImmutable|Carbon $month): int
     {
@@ -123,10 +123,10 @@ class BudgetService
     }
 
     /**
-     * Disponible acumulado de una categoría hasta (incluido) el mes dado.
+     * Cumulative available of a category up to (and including) the given month.
      *
-     * Categoría normal: available = Σ asignado(≤mes) + Σ actividad(≤mes)
-     * Categoría de pago: available = Σ asignado(≤mes) + fondos de crédito(≤mes) + pagos(≤mes)
+     * Normal category: available = Σ assigned(≤month) + Σ activity(≤month)
+     * Payment category: available = Σ assigned(≤month) + credit funds(≤month) + payments(≤month)
      */
     public function available(Budget $budget, Category $category, string|CarbonImmutable|Carbon $month): int
     {
@@ -155,13 +155,13 @@ class BudgetService
     }
 
     /**
-     * Dinero listo para asignar, global del presupuesto.
+     * Money ready to assign, global for the budget.
      *
-     * Las tarjetas de crédito se excluyen del lado "efectivo": gastar a crédito
-     * no reduce el RTA (reduce el disponible de la categoría del gasto), y el
-     * dinero para pagar la tarjeta queda reservado en su categoría de pago.
+     * Credit cards are excluded from the "cash" side: spending on credit
+     * does not reduce the RTA (it reduces the available of the expense's category), and the
+     * money to pay the card stays reserved in its payment category.
      *
-     *   RTA = saldo cuentas on-budget NO-tarjeta − Σ disponible de todas las categorías
+     *   RTA = balance of on-budget NON-card accounts − Σ available of all categories
      */
     public function readyToAssign(Budget $budget): int
     {
@@ -173,21 +173,21 @@ class BudgetService
             ->whereHas('monthlyBudget', fn ($q) => $q->where('budget_id', $budget->id))
             ->sum('assigned');
 
-        // Actividad de categorías normales (incluye compras hechas con tarjeta).
+        // Activity of normal categories (includes purchases made with a card).
         $normalActivity = (int) Transaction::query()
             ->whereIn('account_id', $this->onBudgetAccountIds($budget))
             ->whereNotNull('category_id')
             ->whereNotIn('category_id', $this->paymentCategoryIds($budget))
             ->sum('amount_base');
 
-        // Fondos que las compras a crédito reservan en las categorías de pago.
+        // Funds that credit purchases reserve in the payment categories.
         $paymentFunded = -1 * (int) Transaction::query()
             ->whereIn('account_id', $this->creditCardAccountIds($budget))
             ->whereNotNull('category_id')
             ->whereNotIn('category_id', $this->paymentCategoryIds($budget))
             ->sum('amount_base');
 
-        // Pagos hechos a las tarjetas (movimientos categorizados a la categoría de pago).
+        // Payments made to the cards (transactions categorized to the payment category).
         $paymentActivity = (int) Transaction::query()
             ->whereIn('account_id', $this->onBudgetAccountIds($budget))
             ->whereIn('category_id', $this->paymentCategoryIds($budget))
@@ -199,11 +199,11 @@ class BudgetService
     }
 
     /**
-     * Registra un pago de tarjeta como transferencia de dos patas:
-     *  - salida de la cuenta de efectivo, categorizada a la categoría de pago
-     *  - entrada a la tarjeta (reduce la deuda), sin categoría
+     * Record a card payment as a two-legged transfer:
+     *  - outflow from the cash account, categorized to the payment category
+     *  - inflow to the card (reduces the debt), without a category
      *
-     * MVP: ambas cuentas en la misma moneda.
+     * MVP: both accounts in the same currency.
      */
     public function payCreditCard(Account $from, Account $card, int $cents, string $date, ?int $userId = null): void
     {
@@ -234,7 +234,7 @@ class BudgetService
         });
     }
 
-    // --- Helpers de tarjetas ------------------------------------------------
+    // --- Card helpers -------------------------------------------------------
 
     public function isPaymentCategory(Category $category): bool
     {
@@ -242,7 +242,7 @@ class BudgetService
     }
 
     /**
-     * Fondos que las compras a crédito reservan en la categoría de pago (positivo).
+     * Funds that credit purchases reserve in the payment category (positive).
      */
     protected function creditFunded(Category $paymentCategory, CarbonImmutable $end, ?CarbonImmutable $start = null): int
     {
@@ -258,7 +258,7 @@ class BudgetService
     }
 
     /**
-     * Pagos realizados a la tarjeta (movimientos categorizados a la categoría de pago, negativo).
+     * Payments made to the card (transactions categorized to the payment category, negative).
      */
     protected function paymentActivity(Category $paymentCategory, CarbonImmutable $end, ?CarbonImmutable $start = null): int
     {
@@ -270,7 +270,7 @@ class BudgetService
     }
 
     /**
-     * IDs de cuentas on-budget (incluye tarjetas de crédito).
+     * IDs of on-budget accounts (includes credit cards).
      *
      * @return array<int, int>
      */
@@ -280,7 +280,7 @@ class BudgetService
     }
 
     /**
-     * IDs de cuentas on-budget que NO son tarjeta de crédito (efectivo/banco).
+     * IDs of on-budget accounts that are NOT credit cards (cash/bank).
      *
      * @return array<int, int>
      */
@@ -297,7 +297,7 @@ class BudgetService
     }
 
     /**
-     * IDs de las categorías de pago de tarjeta del presupuesto.
+     * IDs of the budget's credit card payment categories.
      *
      * @return array<int, int>
      */

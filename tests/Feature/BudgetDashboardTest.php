@@ -5,7 +5,7 @@ use App\Services\BudgetService;
 use Carbon\CarbonImmutable;
 use Livewire\Livewire;
 
-it('renderiza el tablero de presupuesto', function () {
+it('renders the budget dashboard', function () {
     loginFamilyUser();
 
     $this->get(route('budget'))
@@ -13,7 +13,7 @@ it('renderiza el tablero de presupuesto', function () {
         ->assertSee('Listo para asignar');
 });
 
-it('asigna dinero a una categoría desde el tablero', function () {
+it('assigns money to a category from the dashboard', function () {
     $user = loginFamilyUser();
     $budget = $user->currentBudget();
     $category = $budget->categoryGroups()->first()->categories()->first();
@@ -25,7 +25,7 @@ it('asigna dinero a una categoría desde el tablero', function () {
     expect(app(BudgetService::class)->assigned($budget, $category, $month))->toBe(30000);
 });
 
-it('refleja el dinero disponible (ingreso) en el dinero por asignar', function () {
+it('reflects the available money (income) in the money to assign', function () {
     $user = loginFamilyUser();
     $budget = $user->currentBudget();
     $account = $budget->accounts()->create([
@@ -34,7 +34,7 @@ it('refleja el dinero disponible (ingreso) en el dinero por asignar', function (
     Transaction::create([
         'account_id' => $account->id,
         'date' => CarbonImmutable::now()->toDateString(),
-        'amount' => 5000000, // ingreso ARS 50.000,00
+        'amount' => 5000000, // income ARS 50.000,00
         'currency' => 'ARS',
     ]);
 
@@ -43,7 +43,7 @@ it('refleja el dinero disponible (ingreso) en el dinero por asignar', function (
         ->assertSeeHtml('50.000,00');
 });
 
-it('navega entre meses', function () {
+it('navigates between months', function () {
     loginFamilyUser();
     $thisMonth = CarbonImmutable::now()->startOfMonth();
 

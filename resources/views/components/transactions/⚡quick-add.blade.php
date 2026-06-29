@@ -83,7 +83,7 @@ new class extends Component
             return null;
         }
 
-        // Signo: egreso negativo, ingreso positivo.
+        // Sign: outflow negative, inflow positive.
         $signedAmount = $this->direction === 'outflow' ? -$cents : $cents;
 
         $payeeId = null;
@@ -106,7 +106,7 @@ new class extends Component
             'currency' => $account->currency,
             'exchange_rate' => $rate,
             'payee_id' => $payeeId,
-            // Los ingresos sin categoría van a "Listo para asignar".
+            // Income without a category goes to "Listo para asignar".
             'category_id' => $this->direction === 'outflow' ? $validated['category_id'] : null,
             'user_id' => auth()->id(),
             'memo' => $validated['memo'] ?: null,
@@ -121,7 +121,7 @@ new class extends Component
 
 <div class="space-y-4">
     <form wire:submit="save" class="space-y-4">
-        {{-- Selector ingreso / egreso --}}
+        {{-- Income / expense selector --}}
         <div class="grid grid-cols-2 gap-2 rounded-xl bg-slate-100 p-1">
             <button type="button" wire:click="$set('direction', 'outflow')"
                     class="rounded-lg py-2 text-sm font-semibold {{ $direction === 'outflow' ? 'bg-white text-red-600 shadow' : 'text-slate-500' }}">
@@ -133,7 +133,7 @@ new class extends Component
             </button>
         </div>
 
-        {{-- Monto --}}
+        {{-- Amount --}}
         <div>
             <label class="mb-1 block text-xs font-medium text-slate-500">Monto</label>
             <input type="text" inputmode="decimal" wire:model="amount" placeholder="0,00"
@@ -141,7 +141,7 @@ new class extends Component
             @error('amount') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
         </div>
 
-        {{-- Cuenta --}}
+        {{-- Account --}}
         <div>
             <label class="mb-1 block text-xs font-medium text-slate-500">Cuenta</label>
             <select wire:model.live="account_id" class="w-full rounded-lg border-slate-300 text-sm focus:border-emerald-500 focus:ring-emerald-500">
@@ -152,7 +152,7 @@ new class extends Component
             @error('account_id') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
         </div>
 
-        {{-- Tipo de cambio (solo si la cuenta no está en moneda base) --}}
+        {{-- Exchange rate (only if the account is not in the base currency) --}}
         @if ($this->needsExchangeRate)
             <div>
                 <label class="mb-1 block text-xs font-medium text-slate-500">
@@ -171,7 +171,7 @@ new class extends Component
                    class="w-full rounded-lg border-slate-300 text-sm focus:border-emerald-500 focus:ring-emerald-500">
         </div>
 
-        {{-- Categoría (solo para gastos) --}}
+        {{-- Category (expenses only) --}}
         @if ($direction === 'outflow')
             <div>
                 <label class="mb-1 block text-xs font-medium text-slate-500">Categoría</label>
@@ -188,7 +188,7 @@ new class extends Component
             </div>
         @endif
 
-        {{-- Fecha + memo --}}
+        {{-- Date + memo --}}
         <div class="grid grid-cols-2 gap-3">
             <div>
                 <label class="mb-1 block text-xs font-medium text-slate-500">Fecha</label>

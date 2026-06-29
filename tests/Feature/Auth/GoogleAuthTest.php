@@ -8,7 +8,7 @@ use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\User as SocialiteUser;
 
 /**
- * Simula la respuesta de Socialite para un usuario de Google dado.
+ * Simulates the Socialite response for a given Google user.
  */
 function fakeGoogleUser(string $email, string $name = 'Fede', string $id = 'g-123'): void
 {
@@ -29,13 +29,13 @@ beforeEach(function () {
     config()->set('budget.allowed_emails', ['owner@example.com', 'member@example.com']);
 });
 
-it('reconoce solo los emails de la whitelist', function () {
+it('recognizes only the whitelist emails', function () {
     expect(FamilyBudgetProvisioner::isAllowed('owner@example.com'))->toBeTrue()
         ->and(FamilyBudgetProvisioner::isAllowed('OWNER@EXAMPLE.COM'))->toBeTrue()
         ->and(FamilyBudgetProvisioner::isAllowed('intruso@gmail.com'))->toBeFalse();
 });
 
-it('aprovisiona al primer email de la whitelist como admin del presupuesto familiar', function () {
+it('provisions the first whitelist email as admin of the family budget', function () {
     $user = app(FamilyBudgetProvisioner::class)->provision([
         'name' => 'Fede',
         'email' => 'owner@example.com',
@@ -47,7 +47,7 @@ it('aprovisiona al primer email de la whitelist como admin del presupuesto famil
     expect($user->budgets()->first()->pivot->role)->toBe('admin');
 });
 
-it('aprovisiona a los demás emails como miembros del mismo presupuesto', function () {
+it('provisions the other emails as members of the same budget', function () {
     $provisioner = app(FamilyBudgetProvisioner::class);
     $provisioner->provision(['email' => 'owner@example.com', 'name' => 'Fede']);
     $member = $provisioner->provision(['email' => 'member@example.com', 'name' => 'Pareja']);
@@ -56,7 +56,7 @@ it('aprovisiona a los demás emails como miembros del mismo presupuesto', functi
     expect($member->budgets()->first()->pivot->role)->toBe('member');
 });
 
-it('loguea a un usuario autorizado y lo manda al presupuesto', function () {
+it('logs in an authorized user and sends them to the budget', function () {
     fakeGoogleUser('owner@example.com');
 
     $response = $this->get(route('auth.google.callback'));
@@ -66,7 +66,7 @@ it('loguea a un usuario autorizado y lo manda al presupuesto', function () {
     expect(User::where('email', 'owner@example.com')->exists())->toBeTrue();
 });
 
-it('rechaza a un email que no está en la whitelist', function () {
+it('rejects an email that is not on the whitelist', function () {
     fakeGoogleUser('intruso@gmail.com');
 
     $response = $this->get(route('auth.google.callback'));
@@ -77,11 +77,11 @@ it('rechaza a un email que no está en la whitelist', function () {
     expect(User::where('email', 'intruso@gmail.com')->exists())->toBeFalse();
 });
 
-it('redirige a login cuando un invitado entra al presupuesto', function () {
+it('redirects to login when a guest enters the budget', function () {
     $this->get(route('budget'))->assertRedirect(route('login'));
 });
 
-it('muestra el dashboard a un usuario autenticado y autorizado', function () {
+it('shows the dashboard to an authenticated and authorized user', function () {
     $user = app(FamilyBudgetProvisioner::class)->provision([
         'email' => 'owner@example.com',
         'name' => 'Fede',

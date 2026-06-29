@@ -12,7 +12,7 @@ new class extends Component
 {
     public bool $showForm = false;
 
-    // Pago de tarjeta
+    // Card payment
     public ?int $payingCardId = null;
     public ?int $payFromId = null;
     public string $payAmount = '';
@@ -54,7 +54,7 @@ new class extends Component
             'name' => $this->name,
             'type' => $this->type,
             'currency' => $this->currency,
-            // Las tarjetas de crédito también son cuentas on-budget.
+            // Credit cards are also on-budget accounts.
             'on_budget' => true,
             'position' => $budget->accounts()->count(),
         ]);

@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('monthly_budget_id')->constrained()->cascadeOnDelete();
             $table->foreignId('category_id')->constrained()->cascadeOnDelete();
-            // Monto asignado a la categoría en ese mes, en centavos de moneda base.
+            // Amount assigned to the category in that month, in cents of base currency.
             $table->bigInteger('assigned')->default(0);
             $table->timestamps();
 

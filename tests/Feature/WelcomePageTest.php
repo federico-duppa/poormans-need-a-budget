@@ -1,6 +1,6 @@
 <?php
 
-it('muestra la landing pública con la marca de la app', function () {
+it('shows the public landing with the app brand', function () {
     $response = $this->get(route('login'));
 
     $response->assertOk();

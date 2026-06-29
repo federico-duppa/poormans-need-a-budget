@@ -5,8 +5,8 @@ namespace App\Support;
 class Money
 {
     /**
-     * Formatea un monto en centavos a string legible según la moneda.
-     * Ej: Money::format(-123456, 'ARS') => "-$1.234,56"
+     * Format an amount in cents to a human-readable string based on the currency.
+     * E.g.: Money::format(-123456, 'ARS') => "-$1.234,56"
      */
     public static function format(int $cents, string $currency = 'ARS'): string
     {
@@ -17,20 +17,20 @@ class Money
         $value = $cents / (10 ** $decimals);
         $sign = $value < 0 ? '-' : '';
 
-        // Formato es-AR: punto para miles, coma para decimales.
+        // es-AR format: dot for thousands, comma for decimals.
         $formatted = number_format(abs($value), $decimals, ',', '.');
 
         return "{$sign}{$symbol}{$formatted}";
     }
 
     /**
-     * Convierte un input de usuario ("1.234,56" o "1234.56") a centavos.
+     * Convert a user input ("1.234,56" or "1234.56") to cents.
      */
     public static function toCents(string|float|int $amount, int $decimals = 2): int
     {
         if (is_string($amount)) {
             $amount = trim($amount);
-            // Normaliza formato es-AR "1.234,56" -> "1234.56"
+            // Normalize es-AR format "1.234,56" -> "1234.56"
             if (str_contains($amount, ',')) {
                 $amount = str_replace('.', '', $amount);
                 $amount = str_replace(',', '.', $amount);

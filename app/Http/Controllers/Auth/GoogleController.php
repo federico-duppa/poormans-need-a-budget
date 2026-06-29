@@ -12,7 +12,7 @@ use Laravel\Socialite\Two\InvalidStateException;
 class GoogleController extends Controller
 {
     /**
-     * Redirige a Google para autenticarse.
+     * Redirect to Google to authenticate.
      */
     public function redirect()
     {
@@ -20,7 +20,7 @@ class GoogleController extends Controller
     }
 
     /**
-     * Maneja el callback de Google: valida la whitelist y loguea al usuario.
+     * Handle the Google callback: validate the whitelist and log the user in.
      */
     public function callback(FamilyBudgetProvisioner $provisioner): RedirectResponse
     {
@@ -51,7 +51,7 @@ class GoogleController extends Controller
     }
 
     /**
-     * Cierra la sesión.
+     * Log out.
      */
     public function logout(): RedirectResponse
     {

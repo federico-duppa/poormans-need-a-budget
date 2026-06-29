@@ -1,32 +1,32 @@
 # 💸 Poorman's Budget
 
-Aplicación de presupuesto familiar con **método de sobres / base-cero** para
-controlar los gastos del grupo familiar. Presupuesto base-cero ("dale un trabajo
-a cada peso"), multi-moneda **ARS + USD**, login con Google restringido por
-whitelist, y pensada **mobile-first** (PWA).
+Family budget application using the **envelope / zero-based method** to
+control the household's spending. Zero-based budgeting ("give every peso a
+job"), multi-currency **ARS + USD**, Google login restricted by
+whitelist, and designed **mobile-first** (PWA).
 
 ## Stack
 
 - **Laravel 13** (PHP 8.4)
 - **Livewire 4** + **Alpine.js** + **Blade**
 - **Tailwind CSS v4** (Vite)
-- **SQLite** en desarrollo · **PostgreSQL** en producción (Laravel Cloud)
+- **SQLite** in development · **PostgreSQL** in production (Laravel Cloud)
 - **Laravel Socialite** (Google OAuth)
-- **Pest** para tests
-- Reportes con barras CSS (sin dependencias JS)
+- **Pest** for tests
+- Reports with CSS bars (no JS dependencies)
 
-## Metodología de presupuesto base-cero
+## Zero-based budgeting methodology
 
-1. **Dale un trabajo a cada peso** — presupuesto base-cero (dinero por asignar + asignación mensual).
-2. **Aceptá tus gastos reales** — metas/targets por categoría (post-MVP).
-3. **Rodá con los golpes** — arrastre de saldos disponibles mes a mes.
-4. **Antigüedad del dinero** — métrica de cuántos días viven tus pesos antes de gastarse.
+1. **Give every peso a job** — zero-based budget (money to assign + monthly assignment).
+2. **Embrace your true expenses** — per-category goals/targets (post-MVP).
+3. **Roll with the punches** — carryover of available balances month to month.
+4. **Age of money** — metric of how many days your pesos live before being spent.
 
-Más el manejo de **tarjetas de crédito con reserva de fondos** (mover dinero a la
-categoría de pago al gastar) y atribución de **autor** por transacción dentro
-del presupuesto familiar compartido.
+Plus the handling of **credit cards with fund reservation** (move money to the
+payment category when spending) and **author** attribution per transaction within
+the shared family budget.
 
-## Puesta en marcha (desarrollo)
+## Getting started (development)
 
 ```bash
 composer install
@@ -35,18 +35,18 @@ cp .env.example .env
 php artisan key:generate
 touch database/database.sqlite
 php artisan migrate
-npm run build   # o: npm run dev
+npm run build   # or: npm run dev
 php artisan serve
 ```
 
-### Variables de entorno relevantes
+### Relevant environment variables
 
-| Variable | Descripción |
+| Variable | Description |
 |---|---|
-| `ALLOWED_EMAILS` | Emails (coma-separados) habilitados para entrar. El primero es admin. |
-| `BUDGET_BASE_CURRENCY` | Moneda base del presupuesto (default `ARS`). |
-| `BUDGET_SECONDARY_CURRENCY` | Moneda secundaria soportada (default `USD`). |
-| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `GOOGLE_REDIRECT_URI` | Credenciales OAuth de Google. |
+| `ALLOWED_EMAILS` | Emails (comma-separated) allowed to log in. The first one is admin. |
+| `BUDGET_BASE_CURRENCY` | The budget's base currency (default `ARS`). |
+| `BUDGET_SECONDARY_CURRENCY` | Supported secondary currency (default `USD`). |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `GOOGLE_REDIRECT_URI` | Google OAuth credentials. |
 
 ## Tests
 
@@ -54,24 +54,26 @@ php artisan serve
 ./vendor/bin/pest
 ```
 
-## Convenciones
+## Conventions
 
-- Los montos se almacenan como **enteros en centavos** (minor units) para evitar
-  errores de redondeo de punto flotante en la lógica financiera.
+- Amounts are stored as **integers in cents** (minor units) to avoid
+  floating-point rounding errors in the financial logic.
 
-## Estado del desarrollo
+## Development status
 
-- [x] Fase 0 — Scaffold base (Laravel 13 + Livewire + Tailwind + layout mobile)
-- [x] Fase 1 — Auth Google + whitelist
-- [x] Fase 2 — Cuentas y transacciones
-- [x] Fase 3 — Motor de presupuesto base-cero
-- [x] Fase 4 — Tarjetas de crédito (reserva de fondos)
-- [x] Fase 5 — Reportes + PWA
-- [x] Fase 6 — Deploy Laravel Cloud (ver [DEPLOY.md](DEPLOY.md))
+- [x] Phase 0 — Base scaffold (Laravel 13 + Livewire + Tailwind + mobile layout)
+- [x] Phase 1 — Google auth + whitelist
+- [x] Phase 2 — Accounts and transactions
+- [x] Phase 3 — Zero-based budget engine
+- [x] Phase 4 — Credit cards (fund reservation)
+- [x] Phase 5 — Reports + PWA
+- [x] Phase 6 — Laravel Cloud deploy (see [DEPLOY.md](DEPLOY.md))
 
-### Próximos pasos (post-MVP)
+### Next steps (post-MVP)
 
-- Metas/targets por categoría (ahorrar $X para tal fecha, gastar hasta $Y/mes).
-- Importar movimientos por CSV y transacciones recurrentes.
-- Splits en el UI de carga, edición/borrado de movimientos.
-- Conciliación de cuentas.
+- Per-category goals/targets (save $X by a given date, spend up to $Y/month).
+- Import transactions via CSV and recurring transactions.
+- Splits in the entry UI, editing/deleting transactions.
+- Account reconciliation.
+</content>
+</invoke>

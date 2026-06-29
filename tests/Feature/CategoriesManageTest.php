@@ -5,7 +5,7 @@ use App\Models\CategoryGroup;
 use App\Models\Transaction;
 use Livewire\Livewire;
 
-it('renderiza la página de categorías', function () {
+it('renders the categories page', function () {
     loginFamilyUser();
 
     $this->get(route('categories'))
@@ -13,7 +13,7 @@ it('renderiza la página de categorías', function () {
         ->assertSee('Nuevo grupo');
 });
 
-it('crea un grupo nuevo', function () {
+it('creates a new group', function () {
     $user = loginFamilyUser();
 
     Livewire::test('categories.manage')
@@ -24,7 +24,7 @@ it('crea un grupo nuevo', function () {
     expect($user->currentBudget()->categoryGroups()->where('name', 'Mascotas')->exists())->toBeTrue();
 });
 
-it('agrega una categoría a un grupo', function () {
+it('adds a category to a group', function () {
     $user = loginFamilyUser();
     $group = $user->currentBudget()->categoryGroups()->where('is_system', false)->first();
 
@@ -35,7 +35,7 @@ it('agrega una categoría a un grupo', function () {
     expect($group->categories()->where('name', 'Veterinaria')->exists())->toBeTrue();
 });
 
-it('renombra una categoría editando el campo', function () {
+it('renames a category by editing the field', function () {
     $user = loginFamilyUser();
     $category = $user->currentBudget()->categoryGroups()->first()->categories()->first();
 
@@ -45,7 +45,7 @@ it('renombra una categoría editando el campo', function () {
     expect($category->fresh()->name)->toBe('Súper y limpieza');
 });
 
-it('elimina una categoría sin movimientos', function () {
+it('deletes a category without transactions', function () {
     $user = loginFamilyUser();
     $category = $user->currentBudget()->categoryGroups()->first()->categories()->first();
 
@@ -54,7 +54,7 @@ it('elimina una categoría sin movimientos', function () {
     expect(Category::find($category->id))->toBeNull();
 });
 
-it('archiva (no elimina) una categoría con movimientos', function () {
+it('archives (does not delete) a category with transactions', function () {
     $user = loginFamilyUser();
     $budget = $user->currentBudget();
     $account = $budget->accounts()->create(['name' => 'Banco', 'type' => 'checking', 'currency' => 'ARS', 'on_budget' => true]);
@@ -65,11 +65,11 @@ it('archiva (no elimina) una categoría con movimientos', function () {
 
     $category->refresh();
     expect($category->archived_at)->not->toBeNull();
-    // Ya no aparece entre las categorías activas del grupo
+    // No longer appears among the group's active categories
     expect($category->group->categories()->whereKey($category->id)->exists())->toBeFalse();
 });
 
-it('no permite eliminar un grupo con categorías', function () {
+it('does not allow deleting a group with categories', function () {
     $user = loginFamilyUser();
     $group = $user->currentBudget()->categoryGroups()->where('is_system', false)->first();
 
@@ -80,16 +80,16 @@ it('no permite eliminar un grupo con categorías', function () {
     expect(CategoryGroup::find($group->id))->not->toBeNull();
 });
 
-it('no toca las categorías-sistema de pago de tarjeta', function () {
+it('does not touch the credit card payment system categories', function () {
     $user = loginFamilyUser();
     $budget = $user->currentBudget();
     $card = $budget->accounts()->create(['name' => 'Visa', 'type' => 'credit_card', 'currency' => 'ARS', 'on_budget' => true]);
     $payment = $card->paymentCategory()->firstOrFail();
 
-    // Intentar eliminar la categoría de pago no debe hacer nada
+    // Attempting to delete the payment category must do nothing
     Livewire::test('categories.manage')->call('deleteCategory', $payment->id);
 
     expect(Category::find($payment->id))->not->toBeNull();
-    // Y el grupo-sistema no se ofrece para gestión
+    // And the system group is not offered for management
     Livewire::test('categories.manage')->assertDontSee('Pagos de tarjeta');
 });
