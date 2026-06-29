@@ -31,4 +31,5 @@ Route::middleware(['auth', 'whitelisted'])->group(function () {
     Route::view('/transactions', 'app.transactions')->name('transactions');
     Route::view('/transactions/new', 'app.transaction-new')->name('transactions.new');
     Route::view('/reports', 'app.reports')->name('reports');
+    Route::view('/categories', 'app.categories')->name('categories');
 });
