@@ -2,13 +2,16 @@
 
 namespace App\Models;
 
+use App\Observers\AccountObserver;
 use App\Support\Money;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+#[ObservedBy(AccountObserver::class)]
 #[Fillable(['budget_id', 'name', 'type', 'currency', 'on_budget', 'position', 'archived_at'])]
 class Account extends Model
 {
@@ -36,6 +39,12 @@ class Account extends Model
     public function transactions(): HasMany
     {
         return $this->hasMany(Transaction::class);
+    }
+
+    /** Categoría de pago asociada (solo tarjetas de crédito). @return HasMany<Category, $this> */
+    public function paymentCategory()
+    {
+        return $this->hasOne(Category::class, 'linked_account_id');
     }
 
     /** @param  Builder<Account>  $query */

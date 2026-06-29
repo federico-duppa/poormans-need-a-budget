@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Account;
 use App\Models\Budget;
 use App\Models\Category;
 use App\Models\CategoryMonth;
@@ -99,21 +100,33 @@ class BudgetService
     /**
      * Actividad (suma de movimientos) de una categoría en un mes, en moneda base.
      * Negativo = gasto.
+     *
+     * Para categorías de pago de tarjeta, la "actividad" del mes combina los
+     * fondos que ingresan desde las compras a crédito (positivo) y los pagos
+     * realizados a la tarjeta (negativo).
      */
     public function activity(Budget $budget, Category $category, string|CarbonImmutable|Carbon $month): int
     {
-        $monthDate = CarbonImmutable::parse($this->normalizeMonth($month));
+        $start = CarbonImmutable::parse($this->normalizeMonth($month))->startOfMonth();
+        $end = CarbonImmutable::parse($this->normalizeMonth($month))->endOfMonth();
+
+        if ($this->isPaymentCategory($category)) {
+            return $this->creditFunded($category, end: $end, start: $start)
+                + $this->paymentActivity($category, end: $end, start: $start);
+        }
 
         return (int) Transaction::query()
             ->where('category_id', $category->id)
             ->whereIn('account_id', $this->onBudgetAccountIds($budget))
-            ->whereBetween('date', [$monthDate->startOfMonth(), $monthDate->endOfMonth()])
+            ->whereBetween('date', [$start, $end])
             ->sum('amount_base');
     }
 
     /**
      * Disponible acumulado de una categoría hasta (incluido) el mes dado.
-     * available = Σ asignado(≤mes) + Σ actividad(≤mes)
+     *
+     * Categoría normal: available = Σ asignado(≤mes) + Σ actividad(≤mes)
+     * Categoría de pago: available = Σ asignado(≤mes) + fondos de crédito(≤mes) + pagos(≤mes)
      */
     public function available(Budget $budget, Category $category, string|CarbonImmutable|Carbon $month): int
     {
@@ -125,6 +138,12 @@ class BudgetService
                 ->where('budget_id', $budget->id)
                 ->whereDate('month', '<=', $monthEnd->toDateString()))
             ->sum('assigned');
+
+        if ($this->isPaymentCategory($category)) {
+            return $assigned
+                + $this->creditFunded($category, end: $monthEnd)
+                + $this->paymentActivity($category, end: $monthEnd);
+        }
 
         $activity = (int) Transaction::query()
             ->where('category_id', $category->id)
@@ -138,36 +157,155 @@ class BudgetService
     /**
      * Dinero listo para asignar (Ready to Assign), global del presupuesto.
      *
-     * RTA = saldo cuentas on-budget − Σ disponible de todas las categorías
-     *     = (ingresos sin categorizar) − (total asignado)
+     * Las tarjetas de crédito se excluyen del lado "efectivo": gastar a crédito
+     * no reduce el RTA (reduce el disponible de la categoría del gasto), y el
+     * dinero para pagar la tarjeta queda reservado en su categoría de pago.
+     *
+     *   RTA = saldo cuentas on-budget NO-tarjeta − Σ disponible de todas las categorías
      */
     public function readyToAssign(Budget $budget): int
     {
-        $onBudgetBalance = (int) Transaction::query()
-            ->whereIn('account_id', $this->onBudgetAccountIds($budget))
+        $cashBalance = (int) Transaction::query()
+            ->whereIn('account_id', $this->cashAccountIds($budget))
             ->sum('amount_base');
 
         $totalAssigned = (int) CategoryMonth::query()
             ->whereHas('monthlyBudget', fn ($q) => $q->where('budget_id', $budget->id))
             ->sum('assigned');
 
-        $totalCategorizedActivity = (int) Transaction::query()
+        // Actividad de categorías normales (incluye compras hechas con tarjeta).
+        $normalActivity = (int) Transaction::query()
             ->whereIn('account_id', $this->onBudgetAccountIds($budget))
             ->whereNotNull('category_id')
+            ->whereNotIn('category_id', $this->paymentCategoryIds($budget))
             ->sum('amount_base');
 
-        $totalAvailable = $totalAssigned + $totalCategorizedActivity;
+        // Fondos que las compras a crédito reservan en las categorías de pago.
+        $paymentFunded = -1 * (int) Transaction::query()
+            ->whereIn('account_id', $this->creditCardAccountIds($budget))
+            ->whereNotNull('category_id')
+            ->whereNotIn('category_id', $this->paymentCategoryIds($budget))
+            ->sum('amount_base');
 
-        return $onBudgetBalance - $totalAvailable;
+        // Pagos hechos a las tarjetas (movimientos categorizados a la categoría de pago).
+        $paymentActivity = (int) Transaction::query()
+            ->whereIn('account_id', $this->onBudgetAccountIds($budget))
+            ->whereIn('category_id', $this->paymentCategoryIds($budget))
+            ->sum('amount_base');
+
+        $totalAvailable = $totalAssigned + $normalActivity + $paymentFunded + $paymentActivity;
+
+        return $cashBalance - $totalAvailable;
     }
 
     /**
-     * IDs de las cuentas on-budget del presupuesto.
+     * Registra un pago de tarjeta como transferencia de dos patas:
+     *  - salida de la cuenta de efectivo, categorizada a la categoría de pago
+     *  - entrada a la tarjeta (reduce la deuda), sin categoría
+     *
+     * MVP: ambas cuentas en la misma moneda.
+     */
+    public function payCreditCard(Account $from, Account $card, int $cents, string $date, ?int $userId = null): void
+    {
+        \Illuminate\Support\Facades\DB::transaction(function () use ($from, $card, $cents, $date, $userId) {
+            $paymentCategory = $card->paymentCategory()->firstOrFail();
+
+            $outflow = Transaction::create([
+                'account_id' => $from->id,
+                'date' => $date,
+                'amount' => -$cents,
+                'currency' => $from->currency,
+                'category_id' => $paymentCategory->id,
+                'user_id' => $userId,
+                'cleared' => true,
+            ]);
+
+            $inflow = Transaction::create([
+                'account_id' => $card->id,
+                'date' => $date,
+                'amount' => $cents,
+                'currency' => $card->currency,
+                'user_id' => $userId,
+                'cleared' => true,
+                'transfer_pair_id' => $outflow->id,
+            ]);
+
+            $outflow->update(['transfer_pair_id' => $inflow->id]);
+        });
+    }
+
+    // --- Helpers de tarjetas ------------------------------------------------
+
+    public function isPaymentCategory(Category $category): bool
+    {
+        return $category->linked_account_id !== null;
+    }
+
+    /**
+     * Fondos que las compras a crédito reservan en la categoría de pago (positivo).
+     */
+    protected function creditFunded(Category $paymentCategory, CarbonImmutable $end, ?CarbonImmutable $start = null): int
+    {
+        $budget = $paymentCategory->group->budget;
+
+        return -1 * (int) Transaction::query()
+            ->where('account_id', $paymentCategory->linked_account_id)
+            ->whereNotNull('category_id')
+            ->whereNotIn('category_id', $this->paymentCategoryIds($budget))
+            ->when($start, fn ($q) => $q->whereDate('date', '>=', $start))
+            ->whereDate('date', '<=', $end)
+            ->sum('amount_base');
+    }
+
+    /**
+     * Pagos realizados a la tarjeta (movimientos categorizados a la categoría de pago, negativo).
+     */
+    protected function paymentActivity(Category $paymentCategory, CarbonImmutable $end, ?CarbonImmutable $start = null): int
+    {
+        return (int) Transaction::query()
+            ->where('category_id', $paymentCategory->id)
+            ->when($start, fn ($q) => $q->whereDate('date', '>=', $start))
+            ->whereDate('date', '<=', $end)
+            ->sum('amount_base');
+    }
+
+    /**
+     * IDs de cuentas on-budget (incluye tarjetas de crédito).
      *
      * @return array<int, int>
      */
     protected function onBudgetAccountIds(Budget $budget): array
     {
         return $budget->accounts()->where('on_budget', true)->pluck('id')->all();
+    }
+
+    /**
+     * IDs de cuentas on-budget que NO son tarjeta de crédito (efectivo/banco).
+     *
+     * @return array<int, int>
+     */
+    protected function cashAccountIds(Budget $budget): array
+    {
+        return $budget->accounts()->where('on_budget', true)
+            ->where('type', '!=', 'credit_card')->pluck('id')->all();
+    }
+
+    /** @return array<int, int> */
+    protected function creditCardAccountIds(Budget $budget): array
+    {
+        return $budget->accounts()->where('type', 'credit_card')->pluck('id')->all();
+    }
+
+    /**
+     * IDs de las categorías de pago de tarjeta del presupuesto.
+     *
+     * @return array<int, int>
+     */
+    protected function paymentCategoryIds(Budget $budget): array
+    {
+        return Category::query()
+            ->whereNotNull('linked_account_id')
+            ->whereHas('group', fn ($q) => $q->where('budget_id', $budget->id))
+            ->pluck('id')->all();
     }
 }
