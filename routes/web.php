@@ -30,5 +30,5 @@ Route::middleware(['auth', 'whitelisted'])->group(function () {
     Route::view('/accounts', 'app.accounts')->name('accounts');
     Route::view('/transactions', 'app.transactions')->name('transactions');
     Route::view('/transactions/new', 'app.transaction-new')->name('transactions.new');
-    Route::view('/reports', 'app.placeholder')->name('reports');
+    Route::view('/reports', 'app.reports')->name('reports');
 });
