@@ -17,6 +17,12 @@
         </p>
 
         <div class="mt-10 w-full">
+            @if (session('error'))
+                <div class="mb-4 rounded-xl bg-red-500/20 px-4 py-3 text-sm text-red-50 ring-1 ring-red-300/40">
+                    {{ session('error') }}
+                </div>
+            @endif
+
             @if (Route::has('auth.google.redirect'))
                 <a href="{{ route('auth.google.redirect') }}"
                    class="flex w-full items-center justify-center gap-3 rounded-xl bg-white px-5 py-3.5 font-semibold text-slate-700 shadow-lg transition hover:bg-slate-50">
