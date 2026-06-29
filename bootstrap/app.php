@@ -12,6 +12,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Detrás del proxy de Laravel Cloud, para que URLs y redirects sean HTTPS.
+        $middleware->trustProxies(at: '*');
+
         $middleware->alias([
             'whitelisted' => \App\Http\Middleware\EnsureWhitelisted::class,
         ]);

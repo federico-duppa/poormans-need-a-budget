@@ -62,9 +62,16 @@ php artisan serve
 ## Estado del desarrollo
 
 - [x] Fase 0 — Scaffold base (Laravel 13 + Livewire + Tailwind + layout mobile)
-- [ ] Fase 1 — Auth Google + whitelist
-- [ ] Fase 2 — Cuentas y transacciones
-- [ ] Fase 3 — Motor de presupuesto base-cero
-- [ ] Fase 4 — Tarjetas de crédito estilo YNAB
-- [ ] Fase 5 — Reportes + PWA
-- [ ] Fase 6 — Deploy Laravel Cloud
+- [x] Fase 1 — Auth Google + whitelist
+- [x] Fase 2 — Cuentas y transacciones
+- [x] Fase 3 — Motor de presupuesto base-cero
+- [x] Fase 4 — Tarjetas de crédito estilo YNAB
+- [x] Fase 5 — Reportes + PWA
+- [x] Fase 6 — Deploy Laravel Cloud (ver [DEPLOY.md](DEPLOY.md))
+
+### Próximos pasos (post-MVP)
+
+- Metas/targets por categoría (ahorrar $X para tal fecha, gastar hasta $Y/mes).
+- Importar movimientos por CSV y transacciones recurrentes.
+- Splits en el UI de carga, edición/borrado de movimientos.
+- Conciliación de cuentas.
